@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chrome Note Trainer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Syncopate:wght@700&display=swap');
+
+        body {
+            font-family: 'Syncopate', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background: radial-gradient(circle at center, #1a1c2c 0%, #050505 100%);
+            color: #00f2ff;
+            overflow: hidden;
+        }
+
+        /* The Main Note */
+        #chord-display {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 16rem;
+            color: #ffffff;
+            height: 350px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* Chrome/Steel Effect */
+            text-shadow:
+                0 0 10px #00f2ff,
+                0 0 20px #00f2ff,
+                2px 2px 0px #444;
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* The Industrial Button */
+        button {
+            padding: 20px 60px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            background: linear-gradient(145deg, #222, #000);
+            color: #00f2ff;
+            border: 2px solid #00f2ff;
+            font-family: 'Syncopate', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 6px;
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        button:hover {
+            background: #00f2ff;
+            color: #000;
+            box-shadow: 0 0 40px rgba(0, 242, 255, 0.6);
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(2px) scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="chord-display">?</div>
+    <button onclick="generateNote()">Next Note</button>
+
+    <script>
+        // Restoring the "better" sound version (Rich Triangles + Harmonics)
+        const notes = {
+            'C': 130.81, 'D': 146.83, 'E': 164.81,
+            'F': 174.61, 'G': 196.00, 'A': 220.00, 'B': 246.94
+        };
+
+        const noteNames = Object.keys(notes);
+        let audioCtx = null;
+        let lastNote = '';
+
+        function generateNote() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            let newNote;
+            do {
+                newNote = noteNames[Math.floor(Math.random() * noteNames.length)];
+            } while (newNote === lastNote);
+
+            const display = document.getElementById('chord-display');
+            display.innerText = newNote;
+            lastNote = newNote;
+
+            // Visual Impact
+            display.style.transform = "scale(1.2)";
+            setTimeout(() => display.style.transform = "scale(1)", 100);
+
+            playEnhancedTone(notes[newNote]);
+        }
+
+        function playEnhancedTone(freq) {
+            const now = audioCtx.currentTime;
+            const duration = 3.5;
+
+            const masterGain = audioCtx.createGain();
+            masterGain.connect(audioCtx.destination);
+
+            // Envelope: Fast pluck, slow bleed
+            masterGain.gain.setValueAtTime(0, now);
+            masterGain.gain.linearRampToValueAtTime(0.7, now + 0.01);
+            masterGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+            // The "Better Sound" Harmonics Mix
+            const harmonics = [1, 2, 3, 4, 5];
+            const harmonicVolumes = [0.6, 0.3, 0.15, 0.08, 0.04];
+
+            harmonics.forEach((h, index) => {
+                const osc = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+
+                // Mix of Triangle (body) and Sine (purity)
+                osc.type = (index === 0) ? 'triangle' : 'sine';
+                osc.frequency.setValueAtTime(freq * h, now);
+
+                g.gain.setValueAtTime(harmonicVolumes[index], now);
+
+                osc.connect(g);
+                g.connect(masterGain);
+
+                osc.start(now);
+                osc.stop(now + duration);
+            });
+        }
+    </script>
+</body>
+</html>
