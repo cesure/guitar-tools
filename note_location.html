@@ -3,76 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chrome Note Trainer</title>
+    <title>Note Location Trainer</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Syncopate:wght@700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Staatliches&family=Inter:wght@300&display=swap');
 
         body {
-            font-family: 'Syncopate', sans-serif;
+            font-family: 'Inter', sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
             margin: 0;
-            background: radial-gradient(circle at center, #1a1c2c 0%, #050505 100%);
-            color: #00f2ff;
+            /* Warmer charcoal with a subtle grainy feel */
+            background-color: #1a1a1a;
+            background-image: radial-gradient(circle at center, #2b241e 0%, #0f0f0f 100%);
+            color: #d1b894;
             overflow: hidden;
+            user-select: none;
         }
 
-        /* The Main Note */
         #chord-display {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 16rem;
-            color: #ffffff;
+            font-family: 'Staatliches', cursive;
+            font-size: 18rem;
+            color: #eee2d1;
             height: 350px;
             display: flex;
             align-items: center;
             justify-content: center;
-            /* Chrome/Steel Effect */
-            text-shadow:
-                0 0 10px #00f2ff,
-                0 0 20px #00f2ff,
-                2px 2px 0px #444;
-            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-shadow: 3px 3px 0px rgba(0,0,0,0.5);
+            transition: transform 0.08s ease-out;
+            letter-spacing: 2px;
         }
 
-        /* The Industrial Button */
         button {
-            padding: 20px 60px;
-            font-size: 1.5rem;
+            padding: 16px 45px;
+            font-size: 1.2rem;
             cursor: pointer;
-            background: linear-gradient(145deg, #222, #000);
-            color: #00f2ff;
-            border: 2px solid #00f2ff;
-            font-family: 'Syncopate', sans-serif;
+            background: transparent;
+            color: #d1b894;
+            border: 1px solid #d1b894;
+            font-family: 'Staatliches', cursive;
             text-transform: uppercase;
-            letter-spacing: 6px;
-            box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+            letter-spacing: 4px;
             border-radius: 4px;
-            transition: all 0.2s ease;
-            position: relative;
+            transition: all 0.3s ease;
         }
 
         button:hover {
-            background: #00f2ff;
-            color: #000;
-            box-shadow: 0 0 40px rgba(0, 242, 255, 0.6);
-            transform: translateY(-2px);
+            background: #d1b894;
+            color: #1a1a1a;
+            box-shadow: 0 0 30px rgba(209, 184, 148, 0.2);
         }
 
         button:active {
             transform: translateY(2px) scale(0.98);
+        }
+
+        .instructions {
+            margin-top: 40px;
+            font-size: 0.75rem;
+            color: #665c52;
+            letter-spacing: 3px;
+            font-weight: 300;
         }
     </style>
 </head>
 <body>
 
     <div id="chord-display">?</div>
-    <button onclick="generateNote()">Next Note</button>
+    <button id="nextBtn" onclick="generateNote()">Next Note</button>
+    <div class="instructions">SPACEBAR TO TOGGLE</div>
 
     <script>
-        // Restoring the "better" sound version (Rich Triangles + Harmonics)
         const notes = {
             'C': 130.81, 'D': 146.83, 'E': 164.81,
             'F': 174.61, 'G': 196.00, 'A': 220.00, 'B': 246.94
@@ -81,6 +84,13 @@
         const noteNames = Object.keys(notes);
         let audioCtx = null;
         let lastNote = '';
+
+        window.addEventListener('keydown', (e) => {
+            if(e.code === "Space") {
+                e.preventDefault();
+                generateNote();
+            }
+        });
 
         function generateNote() {
             if (!audioCtx) {
@@ -96,9 +106,9 @@
             display.innerText = newNote;
             lastNote = newNote;
 
-            // Visual Impact
-            display.style.transform = "scale(1.2)";
-            setTimeout(() => display.style.transform = "scale(1)", 100);
+            // Clean modern "pop"
+            display.style.transform = "scale(1.05)";
+            setTimeout(() => display.style.transform = "scale(1)", 80);
 
             playEnhancedTone(notes[newNote]);
         }
@@ -106,32 +116,24 @@
         function playEnhancedTone(freq) {
             const now = audioCtx.currentTime;
             const duration = 3.5;
-
             const masterGain = audioCtx.createGain();
             masterGain.connect(audioCtx.destination);
 
-            // Envelope: Fast pluck, slow bleed
             masterGain.gain.setValueAtTime(0, now);
-            masterGain.gain.linearRampToValueAtTime(0.7, now + 0.01);
+            masterGain.gain.linearRampToValueAtTime(0.6, now + 0.01);
             masterGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
 
-            // The "Better Sound" Harmonics Mix
             const harmonics = [1, 2, 3, 4, 5];
-            const harmonicVolumes = [0.6, 0.3, 0.15, 0.08, 0.04];
+            const volumes = [0.5, 0.25, 0.12, 0.06, 0.03];
 
-            harmonics.forEach((h, index) => {
+            harmonics.forEach((h, i) => {
                 const osc = audioCtx.createOscillator();
                 const g = audioCtx.createGain();
-
-                // Mix of Triangle (body) and Sine (purity)
-                osc.type = (index === 0) ? 'triangle' : 'sine';
+                osc.type = (i === 0) ? 'triangle' : 'sine';
                 osc.frequency.setValueAtTime(freq * h, now);
-
-                g.gain.setValueAtTime(harmonicVolumes[index], now);
-
+                g.gain.setValueAtTime(volumes[i], now);
                 osc.connect(g);
                 g.connect(masterGain);
-
                 osc.start(now);
                 osc.stop(now + duration);
             });
