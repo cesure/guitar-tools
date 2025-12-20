@@ -15,7 +15,6 @@
             justify-content: center;
             height: 100vh;
             margin: 0;
-            /* Warmer charcoal with a subtle grainy feel */
             background-color: #1a1a1a;
             background-image: radial-gradient(circle at center, #2b241e 0%, #0f0f0f 100%);
             color: #d1b894;
@@ -34,6 +33,12 @@
             text-shadow: 3px 3px 0px rgba(0,0,0,0.5);
             transition: transform 0.08s ease-out;
             letter-spacing: 2px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
         }
 
         button {
@@ -60,20 +65,42 @@
             transform: translateY(2px) scale(0.98);
         }
 
+        /* Styling for the repeat button to be slightly different */
+        #repeatBtn {
+            padding: 16px 25px;
+            opacity: 0.7;
+            border-style: dashed; /* Visual cue that it's a secondary action */
+        }
+
+        #repeatBtn:hover {
+            opacity: 1;
+            border-style: solid;
+        }
+
         .instructions {
             margin-top: 40px;
             font-size: 0.75rem;
             color: #665c52;
             letter-spacing: 3px;
             font-weight: 300;
+            text-align: center;
+            line-height: 1.6;
         }
     </style>
 </head>
 <body>
 
     <div id="chord-display">?</div>
-    <button id="nextBtn" onclick="generateNote()">Next Note</button>
-    <div class="instructions">SPACEBAR TO TOGGLE</div>
+
+    <div class="controls">
+        <button id="nextBtn" onclick="generateNote()">Next Note</button>
+        <button id="repeatBtn" onclick="repeatTone()">Repeat Tone</button>
+    </div>
+
+    <div class="instructions">
+        SPACEBAR: NEXT NOTE <br>
+        'R' KEY: REPEAT TONE
+    </div>
 
     <script>
         const notes = {
@@ -90,13 +117,13 @@
                 e.preventDefault();
                 generateNote();
             }
+            if(e.key.toLowerCase() === "r") {
+                repeatTone();
+            }
         });
 
         function generateNote() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-
+            initAudio();
             let newNote;
             do {
                 newNote = noteNames[Math.floor(Math.random() * noteNames.length)];
@@ -106,11 +133,31 @@
             display.innerText = newNote;
             lastNote = newNote;
 
-            // Clean modern "pop"
             display.style.transform = "scale(1.05)";
             setTimeout(() => display.style.transform = "scale(1)", 80);
 
             playEnhancedTone(notes[newNote]);
+        }
+
+        function repeatTone() {
+            if (lastNote && notes[lastNote]) {
+                initAudio();
+                playEnhancedTone(notes[lastNote]);
+
+                // Small visual pulse on the display to show it triggered
+                const display = document.getElementById('chord-display');
+                display.style.opacity = "0.7";
+                setTimeout(() => display.style.opacity = "1", 100);
+            }
+        }
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
         }
 
         function playEnhancedTone(freq) {
