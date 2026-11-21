@@ -8,7 +8,7 @@ export type { Pitch };
  *
  * Für Interfaces wie Focusrite oder Pod Go wichtig:
  * - eigener AudioContext mit der Abtastrate des Geräts (Firefox verbindet sonst gar nicht),
- * - jeder Kanal wird einzeln ausgewertet (Gitarre oft nur auf Eingang 1 oder 2),
+ * - es wird genau ein Kanal ausgewertet (Gitarre oft nur auf Eingang 1 oder 2), die anderen nur gemessen,
  * - niedrige Mindestlautstärke, da eine direkt eingesteckte Gitarre leise sein kann.
  */
 
@@ -20,14 +20,14 @@ export interface InputDevice {
 }
 
 /** Unterhalb dieses Pegels (RMS) gilt das Signal als Stille. ≈ −56 dBFS */
-const GATE = 0.0015;
+export const GATE = 0.0015;
 
 export class PitchListener {
   a4 = 440;
   /** Gerät, leer = Standardeingang des Systems */
   deviceId = '';
-  /** 0 = automatisch (lautester Kanal), sonst Kanal 1 … n */
-  channel = 0;
+  /** Ausgewerteter Kanal 1 … n (z. B. Eingang 2 der Focusrite = Kanal 2) */
+  channel = 1;
 
   /** Infos fürs UI */
   channels = 0;
@@ -39,9 +39,12 @@ export class PitchListener {
   private analysers: AnalyserNode[] = [];
   private timer: ReturnType<typeof setInterval> | null = null;
   private recent: number[] = [];
+  /** Pegel der letzten Messungen und Zeitpunkt des letzten Anschlags */
+  private levelHist: number[] = [];
+  private lastAttack = -Infinity;
 
-  /** Pegel-Rückmeldung fürs UI (RMS des ausgewerteten Kanals, Kanal 1 … n) */
-  onLevel: ((level: number, channel: number) => void) | null = null;
+  /** Pegel-Rückmeldung fürs UI: RMS aller Kanäle (Index 0 = Kanal 1) */
+  onLevel: ((levels: number[]) => void) | null = null;
 
   constructor(private onPitch: (p: Pitch | null) => void) {}
 
@@ -125,24 +128,27 @@ export class PitchListener {
       for (const v of bufs[i]) sum += v * v;
       return Math.sqrt(sum / bufs[i].length);
     });
-    const ch =
-      this.channel > 0 && this.channel <= levels.length
-        ? this.channel - 1
-        : levels.reduce((best, l, i) => (l > levels[best] ? i : best), 0);
+    const ch = Math.min(Math.max(1, this.channel), levels.length) - 1;
     const rms = levels[ch];
-    this.onLevel?.(rms, ch + 1);
+    this.onLevel?.(levels);
 
-    const freq = rms > GATE ? yin(bufs[ch], this.ctx.sampleRate) : null;
-    if (!freq) {
+    // Anschlag = Pegel steigt innerhalb ~150 ms auf mehr als das Doppelte (≈ +6 dB)
+    const now = performance.now();
+    if (this.levelHist.length >= 3 && rms > GATE * 2 && rms > this.levelHist[0] * 2) this.lastAttack = now;
+    this.levelHist.push(rms);
+    if (this.levelHist.length > 3) this.levelHist.shift();
+
+    const res = rms > GATE ? yin(bufs[ch], this.ctx.sampleRate) : null;
+    if (!res) {
       this.recent = [];
       this.onPitch(null);
       return;
     }
     // Median der letzten Werte → ruhige Anzeige, Ausreißer fallen weg
-    this.recent.push(freq);
+    this.recent.push(res.freq);
     if (this.recent.length > 5) this.recent.shift();
     const sorted = [...this.recent].sort((a, b) => a - b);
-    this.onPitch(freqToPitch(sorted[Math.floor(sorted.length / 2)], rms, this.a4));
+    this.onPitch(freqToPitch(sorted[Math.floor(sorted.length / 2)], rms, this.a4, res.clarity, now - this.lastAttack));
   }
 
   stop() {
@@ -154,5 +160,7 @@ export class PitchListener {
     void this.ctx?.close().catch(() => {});
     this.ctx = null;
     this.recent = [];
+    this.levelHist = [];
+    this.lastAttack = -Infinity;
   }
 }

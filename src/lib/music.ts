@@ -38,7 +38,7 @@ export const MAIN_SCALES: ScaleId[] = ['major', 'minor', 'major-penta', 'minor-p
 export const MORE_SCALES: ScaleId[] = ['harmonic-minor', 'melodic-minor', 'dorian', 'mixolydian'];
 
 /** Halbtöne vom Grundton der Skala zum Grundton der zugehörigen Dur-Tonart (A-Moll → C-Dur = +3). */
-const TO_MAJOR: Record<ScaleId, number> = {
+export const TO_MAJOR: Record<ScaleId, number> = {
   'minor-penta': 3, 'major-penta': 0, blues: 3, major: 0, minor: 3,
   'harmonic-minor': 3, 'melodic-minor': 3, dorian: 10, mixolydian: 5,
 };
@@ -100,29 +100,16 @@ const CAGED = [
 export interface Shape { name: string; from: number; to: number }
 
 /**
- * Die fünf CAGED-Formen einer Skala, so sortiert, dass Form 1 den Grundton der Skala
- * auf der tiefen E-Saite am Anfang hat (Moll-Pentatonik: Form 1 = klassische „Box 1“).
+ * Die fünf CAGED-Formen einer Skala, von links nach rechts nach ihrer Lage auf dem Griffbrett sortiert
+ * (Form 1 = die Form, die am nächsten am Sattel liegt).
  */
 export function cagedShapes(root: number, scale: ScaleId): Shape[] {
   const majorRoot = (root + TO_MAJOR[scale]) % 12;
   const r = (majorRoot - (TUNING[0] % 12) + 12) % 12; // Bund des Dur-Grundtons auf der tiefen E-Saite
-  const shapes = CAGED.map((c) => {
+  return CAGED.map((c) => {
     const start = (((r + c.from + 1) % 12) + 12) % 12 - 1; // −1 … 10
     return { name: c.name, from: Math.max(0, start), to: start + (c.to - c.from) };
-  });
-
-  const rootFret = (root - (TUNING[0] % 12) + 12) % 12;
-  let best = 0;
-  let bestDist = Infinity;
-  shapes.forEach((sh, i) => {
-    for (const f of [rootFret, rootFret + 12]) {
-      if (f >= sh.from && f <= sh.to && f - sh.from < bestDist) {
-        bestDist = f - sh.from;
-        best = i;
-      }
-    }
-  });
-  return [...shapes.slice(best), ...shapes.slice(0, best)];
+  }).sort((a, b) => a.from - b.from || a.to - b.to);
 }
 
 /* ---------------- Akkorde ---------------- */

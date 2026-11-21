@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import Seg from './Seg.svelte';
   import {
-    CHARACTERISTIC, INTERVALS, MAIN_SCALES, MORE_SCALES, PARALLEL, ROOT_NAMES, SCALES, TUNING,
+    CHARACTERISTIC, INTERVALS, MAIN_SCALES, MORE_SCALES, PARALLEL, ROOT_NAMES, SCALES, TO_MAJOR, TUNING,
     cagedShapes, spelling, type ScaleId,
   } from '../lib/music';
   import type { Lang, Messages } from '../i18n/ui';
@@ -50,8 +50,27 @@
 
   const shapeItems = $derived([
     { value: 0, label: t.all },
-    ...shapes.map((sh, i) => ({ value: i + 1, label: `${i + 1} · ${sh.name}` })),
+    ...shapes.map((_, i) => ({ value: i + 1, label: String(i + 1) })),
   ]);
+
+  // CAGED-Erklärung nur bei Dur-Skalen – bei Moll beziehen sich die Buchstaben auf die Dur-Parallele (verwirrend)
+  const cagedHint = $derived(
+    s.shape && win && TO_MAJOR[s.scale] === 0
+      ? (fretOfRootOnShapeString(win.name) === 0 ? t.cagedHintOpen : t.cagedHint)
+          .replace('{n}', String(s.shape))
+          .replace('{shape}', win.name)
+          .replace('{fret}', String(fretOfRootOnShapeString(win.name)))
+          .replace('{root}', rootNames[s.root])
+      : null,
+  );
+  /** Bund, in dem der verschobene offene Griff als Barré liegt (Grundton auf der Saite, nach der die Form heißt) */
+  function fretOfRootOnShapeString(name: string) {
+    const string = { E: 0, A: 1, D: 2, G: 0, C: 1 }[name] ?? 0; // G- und C-Form: Grundton auf tiefer E- bzw. A-Saite
+    const open = { E: 4, A: 9, D: 2, G: 7, C: 0 }[name] ?? 0; // Grundton des offenen Griffs
+    const rootFret = (s.root - (TUNING[string] % 12) + 12) % 12;
+    const openFret = (open - (TUNING[string] % 12) + 12) % 12;
+    return (rootFret - openFret + 12) % 12;
+  }
 
   function cell(stringIndex: number, fret: number) {
     const pc = (TUNING[stringIndex] + fret) % 12;
@@ -135,6 +154,7 @@
 
   <div class="info">
     <p><strong>{rootNames[s.root]} {t.names[s.scale]}:</strong> {t.info[s.scale]}</p>
+    {#if cagedHint}<p class="caged">{cagedHint}</p>{/if}
     <div class="row">
       {#if parallel}
         <button class="btn ghost small" onclick={goParallel}>
@@ -188,6 +208,7 @@
   .legend i.dim { opacity: 0.25; }
   .info { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
   .info p { margin: 0 0 12px; }
+  .info p.caged { color: var(--muted); font-size: 14px; margin-top: -4px; }
   .btn.small { padding: 6px 14px; font-size: 13px; font-weight: 500; white-space: normal; }
   @media (max-width: 720px) {
     .controls > div { flex-basis: 100%; }

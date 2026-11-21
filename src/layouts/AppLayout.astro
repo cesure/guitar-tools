@@ -2,7 +2,7 @@
 import '../styles/global.css';
 import { pwaInfo } from 'virtual:pwa-info';
 import Icon from '../components/Icon.astro';
-import { languages, navGroups, toolHref, ui, type Lang, type Tool } from '../i18n/ui';
+import { defaultLang, languages, navGroups, toolHref, ui, type Lang, type Tool } from '../i18n/ui';
 
 interface Props {
   lang: Lang;
@@ -27,11 +27,22 @@ const langs = Object.keys(languages) as Lang[];
     <meta name="theme-color" content="#121214" media="(prefers-color-scheme: dark)" />
     {langs.map((l) => <link rel="alternate" hreflang={l} href={new URL(toolHref(l, tool), Astro.site)} />)}
     {pwaInfo && <Fragment set:html={pwaInfo.webManifest.linkTag} />}
+    {
+      lang === defaultLang && tool === 'metronome' && (
+        <script is:inline define:vars={{ enHref: toolHref('en', 'metronome') }}>
+          // Startseite: wer Englisch gewählt hat oder einen englischen Browser nutzt, landet auf /en/
+          try {
+            var chosen = localStorage.getItem('gt-lang');
+            var browser = ((navigator.languages || [navigator.language])[0] || '').slice(0, 2);
+            if (chosen === 'en' || (!chosen && browser && browser !== 'de')) location.replace(enHref + location.search);
+          } catch (e) {}
+        </script>
+      )
+    }
     <script is:inline>
       try {
         var saved = localStorage.getItem('gt-theme');
         if (saved) document.documentElement.dataset.theme = saved;
-        localStorage.setItem('gt-lang', document.documentElement.lang);
       } catch (e) {}
     </script>
   </head>
@@ -105,6 +116,17 @@ const langs = Object.keys(languages) as Lang[];
         render();
       });
       render();
+
+      // Sprache nur merken, wenn sie bewusst gewählt wird
+      document.addEventListener('click', (e) => {
+        const a = (e.target as HTMLElement).closest<HTMLAnchorElement>('a[data-lang-choice]');
+        if (!a) return;
+        try {
+          localStorage.setItem('gt-lang', a.dataset.langChoice ?? '');
+        } catch {
+          /* ohne Speichern weiter */
+        }
+      });
 
       // Offline-Modus (PWA)
       registerSW({ immediate: true });

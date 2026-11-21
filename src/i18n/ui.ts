@@ -20,10 +20,15 @@ export const slugs: Record<Lang, Record<Tool, string>> = {
   en: { metronome: '', finder: 'note-finder', tuner: 'tuner', scales: 'scales', chords: 'chords', settings: 'settings' },
 };
 
+/** Pfad ohne Basis und ohne Schrägstriche: Deutsch ohne Sprachkürzel, andere Sprachen mit (z. B. „en/scales“). */
+export function toolPath(lang: Lang, tool: Tool): string {
+  return [lang === defaultLang ? '' : lang, slugs[lang][tool]].filter(Boolean).join('/');
+}
+
 export function toolHref(lang: Lang, tool: Tool): string {
   const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
-  const slug = slugs[lang][tool];
-  return `${base}${lang}/${slug ? `${slug}/` : ''}`;
+  const path = toolPath(lang, tool);
+  return `${base}${path ? `${path}/` : ''}`;
 }
 
 const de = {
@@ -82,6 +87,7 @@ const de = {
     best: 'Bestzeit',
     newBest: 'Neue Bestzeit!',
     summary: 'Runde geschafft',
+    summaryStopped: 'Runde beendet',
     mic: 'Mikrofon',
     micStart: '🎤 Mit Mikrofon üben',
     micStop: 'Mikrofon aus',
@@ -101,7 +107,7 @@ const de = {
     breatherNormal: 'normal',
     breatherKey: 'Taste',
     successSound: 'Erfolgston',
-    keys: 'Leertaste: Start / Gefunden / Weiter · P: Pause · R: Ton anhören',
+    keys: 'Leertaste: Start / Gefunden / Weiter · P: Pause · Esc: Beenden · R: Ton anhören',
   },
   metronome: {
     title: 'Metronom',
@@ -128,7 +134,9 @@ const de = {
     sub: 'Alle Töne auf dem Griffbrett – Grundton hervorgehoben, Formen einzeln einblendbar.',
     root: 'Grundton',
     scale: 'Skala',
-    shape: 'Form (CAGED)',
+    shape: 'Form',
+    cagedHintOpen: 'CAGED: Form {n} liegt rund um den offenen {shape}-Dur-Griff selbst.',
+    cagedHint: 'CAGED: Form {n} liegt rund um den {shape}-Dur-Griff. Um {fret} Bünde verschoben (als Barré) klingt er als {root}-Dur.',
     all: 'Alle',
     more: 'Mehr',
     labels: 'Anzeige',
@@ -203,7 +211,14 @@ const de = {
     input: 'Eingang',
     standard: 'Systemstandard',
     channel: 'Kanal',
-    auto: 'Auto',
+    switchTo: 'Signal auf Kanal {n} – umschalten',
+    section: 'Audio-Eingang',
+    sectionHint: 'Für Stimmgerät und Tonfinder – eingebautes Mikrofon oder Audio-Interface (z. B. Focusrite, Pod Go).',
+    channelHint: 'Bei Interfaces: der Eingang, in dem die Gitarre steckt (Focusrite Eingang 2 = Kanal 2).',
+    test: '🎤 Eingang testen',
+    testStop: 'Test beenden',
+    detected: 'Erkannter Ton',
+    change: 'Eingang ändern',
     level: 'Pegel',
     noSignal: 'Kein Signal? Gain am Interface aufdrehen, Lautstärke an der Gitarre prüfen oder anderen Eingang/Kanal wählen.',
     tip: 'Tipp: Hall, Delay oder starke Verzerrung erschweren die Erkennung – ein cleaner Sound funktioniert am besten.',
@@ -268,6 +283,7 @@ const en: Messages = {
     best: 'Best time',
     newBest: 'New best time!',
     summary: 'Round complete',
+    summaryStopped: 'Round finished',
     mic: 'Microphone',
     micStart: '🎤 Practise with microphone',
     micStop: 'Microphone off',
@@ -287,7 +303,7 @@ const en: Messages = {
     breatherNormal: 'normal',
     breatherKey: 'key',
     successSound: 'Success sound',
-    keys: 'Space: start / found / next · P: pause · R: hear note',
+    keys: 'Space: start / found / next · P: pause · Esc: finish · R: hear note',
   },
   metronome: {
     title: 'Metronome',
@@ -314,7 +330,9 @@ const en: Messages = {
     sub: 'Every note on the fretboard – root highlighted, single shapes on demand.',
     root: 'Root',
     scale: 'Scale',
-    shape: 'Shape (CAGED)',
+    shape: 'Shape',
+    cagedHintOpen: 'CAGED: shape {n} sits around the open {shape} major chord itself.',
+    cagedHint: 'CAGED: shape {n} sits around the open {shape} major chord shape. Moved up {fret} frets (as a barre) it sounds as {root} major.',
     all: 'All',
     more: 'More',
     labels: 'Labels',
@@ -389,7 +407,14 @@ const en: Messages = {
     input: 'Input',
     standard: 'System default',
     channel: 'Channel',
-    auto: 'Auto',
+    switchTo: 'Signal on channel {n} – switch',
+    section: 'Audio input',
+    sectionHint: 'Used by the tuner and note finder – built-in microphone or audio interface (e.g. Focusrite, Pod Go).',
+    channelHint: 'With interfaces: the input your guitar is plugged into (Focusrite input 2 = channel 2).',
+    test: '🎤 Test input',
+    testStop: 'Stop test',
+    detected: 'Detected note',
+    change: 'Change input',
     level: 'Level',
     noSignal: 'No signal? Turn up the gain on your interface, check the guitar volume or pick another input/channel.',
     tip: 'Tip: reverb, delay or heavy distortion make detection harder – a clean sound works best.',

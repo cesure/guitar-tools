@@ -7,7 +7,7 @@
   import { NOTE_NAMES, STRING_LABELS, TUNING, midiToFreq } from '../lib/music';
   import type { Lang, Messages } from '../i18n/ui';
 
-  let { t, mic, lang }: { t: Messages['tuner']; mic: Messages['mic']; lang: Lang } = $props();
+  let { t, mic, lang, settingsHref }: { t: Messages['tuner']; mic: Messages['mic']; lang: Lang; settingsHref: string } = $props();
 
   const s = $state(load('gt-tuner', { a4: 440 }));
   $effect(() => save('gt-tuner', s));
@@ -63,7 +63,7 @@
   <p class="status">{running ? status : ' '}</p>
   <p class="hz">{pitch ? `${pitch.freq.toFixed(1)} Hz · ${cents > 0 ? '+' : ''}${cents} Cent` : ' '}</p>
 
-  <div class="micwrap"><MicPanel {listener} t={mic} startLabel={t.start} stopLabel={t.stop} bind:running /></div>
+  <div class="micwrap"><MicPanel {listener} t={mic} {settingsHref} startLabel={t.start} stopLabel={t.stop} bind:running /></div>
 </div>
 
 <div class="card" style="margin-top:16px">

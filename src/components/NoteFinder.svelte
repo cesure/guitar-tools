@@ -9,7 +9,7 @@
   import { NATURALS, NOTE_NAMES, STRING_LABELS, TUNING, midiToFreq } from '../lib/music';
   import type { Lang, Messages } from '../i18n/ui';
 
-  let { t, mic, lang }: { t: Messages['finder']; mic: Messages['mic']; lang: Lang } = $props();
+  let { t, mic, lang, settingsHref }: { t: Messages['finder']; mic: Messages['mic']; lang: Lang; settingsHref: string } = $props();
 
   const names = $derived(NOTE_NAMES[lang]);
   const strLabels = $derived(STRING_LABELS[lang]);
@@ -65,7 +65,7 @@
   let hits = $state(0);
   let mistakes = $state(0);
   let results: { label: string; ms: number }[] = [];
-  let summary = $state<{ total: number; avg: number; slowest: string; best: number | null; newBest: boolean } | null>(null);
+  let summary = $state<{ total: number; avg: number; slowest: string; best: number | null; newBest: boolean; complete: boolean } | null>(null);
   const bestKey = $derived(`${settings.mode}-${settings.length}-${settings.all12 ? 12 : 7}`);
 
   /* ================= Rückmeldungen ================= */
@@ -114,6 +114,8 @@
     hitInfo = null;
     wrongMsg = null;
     lastWrong = -1;
+    stable = 0;
+    targetSince = performance.now();
     phase = 'search';
     if (!paused) startClock();
   }
@@ -136,6 +138,9 @@
       found[s] = fret;
       if (step < 5) {
         step++;
+        stable = 0;
+        lastWrong = -1;
+        targetSince = performance.now();
         startClock();
         return;
       }
@@ -155,6 +160,21 @@
     else newTarget();
   }
 
+  /** Runde vorzeitig beenden: mit Ergebnis, wenn schon etwas gefunden wurde, sonst zurück zum Start. */
+  function stopRound() {
+    timers.forEach(clearTimeout);
+    timers = [];
+    if (hits === 0) {
+      stopClock();
+      if (breatherTimer) clearTimeout(breatherTimer);
+      breatherTimer = null;
+      paused = false;
+      hitInfo = null;
+      wrongMsg = null;
+      phase = 'idle';
+    } else finish();
+  }
+
   function finish() {
     stopClock();
     if (breatherTimer) clearTimeout(breatherTimer);
@@ -166,7 +186,7 @@
     const complete = settings.length > 0 && done >= settings.length;
     const newBest = complete && (prev === null || total < prev);
     if (newBest) save('gt-finder-best', { ...bests, [bestKey]: total });
-    summary = { total, avg: done ? total / done : 0, slowest: slowest.label, best: newBest ? total : prev, newBest };
+    summary = { total, avg: done ? total / done : 0, slowest: slowest.label, best: newBest ? total : prev, newBest, complete };
     phase = 'summary';
   }
 
@@ -218,6 +238,11 @@
   let lastWrong = -1;
   let silence = 0;
 
+  /** Zeitpunkt, ab dem die aktuelle Aufgabe (bzw. Saite) gilt – nur danach angeschlagene Töne zählen */
+  let targetSince = 0;
+  /** Wurde der gehörte Ton nach Beginn der aktuellen Aufgabe angeschlagen? (nicht nur nachklingend) */
+  const freshAttack = (p: Pitch) => p.sinceAttack <= performance.now() - targetSince;
+
   const listener = new PitchListener((p) => {
     heard = p && performance.now() >= deafUntil ? p : null;
     if (!heard) {
@@ -226,7 +251,9 @@
       return;
     }
     silence = 0;
-    if (phase !== 'search' || paused || Math.abs(heard.cents) > 40) {
+    // Nur neu angeschlagene Töne zählen – ein nachklingender Ton der vorigen Saite
+    // (gleiche Tonhöhe gibt es oft auf mehreren Saiten) löst sonst gleich den nächsten Treffer aus.
+    if (phase !== 'search' || paused || Math.abs(heard.cents) > 40 || !freshAttack(heard)) {
       stable = 0;
       return;
     }
@@ -234,8 +261,9 @@
     stableMidi = heard.midi;
     if (targetMidis(activeString, note).includes(heard.midi)) {
       if (stable === 3) hit(); // ~150 ms stabil
-    } else if (stable === 5 && heard.midi !== lastWrong) {
-      // ~250 ms stabil falsch → zählt als Fehler (Anschlaggeräusche nicht)
+    } else if (stable === 8 && heard.clarity >= 0.9 && heard.sinceAttack < 1500 && heard.midi !== lastWrong) {
+      // Fehler nur bei klarem, angeschlagenem Ton, der ~0,4 s klingt –
+      // Berühren, Abdämpfen oder Mitschwingen zählen nicht
       lastWrong = heard.midi;
       mistakes++;
       wrongMsg = t.wrong.replace('{heard}', `${names[heard.midi % 12]}${Math.floor(heard.midi / 12) - 1}`).replace('{target}', names[note]);
@@ -247,7 +275,7 @@
 
   /** Live-Anzeige: wie weit liegt der gehörte Ton vom gesuchten entfernt? */
   const direction = $derived.by(() => {
-    if (!heard || phase !== 'search' || paused) return null;
+    if (!heard || phase !== 'search' || paused || heard.clarity < 0.8 || !freshAttack(heard)) return null;
     const targets = targetMidis(activeString, note);
     const target = targets.reduce((a, b) => (Math.abs(b - heard!.midi) < Math.abs(a - heard!.midi) ? b : a));
     const diff = heard.midi - target + heard.cents / 100;
@@ -271,7 +299,8 @@
       else if (phase === 'idle' || phase === 'summary') startRound();
       else if (phase === 'search') hit();
       else if (phase === 'breather') advance();
-    } else if (k === 'p' || k === 'escape') togglePause();
+    } else if (k === 'p') togglePause();
+    else if (k === 'escape' && inRound) stopRound();
     else if (k === 'r' && (phase === 'search' || phase === 'breather')) listen();
   }
 
@@ -316,7 +345,7 @@
 
     {#if phase === 'summary' && summary}
       <div class="summary">
-        <h2>{t.summary}</h2>
+        <h2>{summary.complete ? t.summary : t.summaryStopped}</h2>
         {#if summary.newBest}<div class="badge">🏆 {t.newBest}</div>{/if}
         <div class="sgrid">
           <div><strong>{fmt(summary.total)}</strong><span>{t.time}</span></div>
@@ -411,8 +440,8 @@
           <button class="btn" onclick={advance}>{t.next} →</button>
           <button class="btn ghost" onclick={togglePause} aria-label={t.pause}>⏸</button>
         {/if}
-        {#if inRound && !settings.length}
-          <button class="btn ghost" onclick={finish}>{t.stop}</button>
+        {#if inRound}
+          <button class="btn ghost" onclick={stopRound}>■ {t.stop}</button>
         {/if}
       </div>
       <p class="keys">{t.keys}</p>
@@ -421,7 +450,7 @@
 
   <div class="card side">
     <div class="label">{t.mic}</div>
-    <MicPanel {listener} t={mic} startLabel={t.micStart} stopLabel={t.micStop} bind:running={micOn} />
+    <MicPanel {listener} t={mic} {settingsHref} startLabel={t.micStart} stopLabel={t.micStop} bind:running={micOn} />
     {#if !micOn}<p class="small">{t.micHint}</p>{/if}
 
     <fieldset disabled={inRound}>

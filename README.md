@@ -27,7 +27,7 @@ Alles läuft im Devcontainer (Node 22). Auf dem Mac braucht es nur Docker (z. B.
 
 | Ordner | Inhalt |
 |---|---|
-| `src/pages/[lang]/[...tool].astro` | eine Seite pro Sprache und Werkzeug (`/de/skalen/`, `/en/scales/` …; das Metronom ist die Startseite) |
+| `src/pages/[...path].astro` | eine Seite pro Sprache und Werkzeug: Deutsch ohne Kürzel (`/skalen/`), Englisch unter `/en/` (`/en/scales/`); Metronom ist die Startseite, alte `/de/…`-Links leiten weiter |
 | `src/components/*.svelte` | die interaktiven Werkzeuge |
 | `src/lib/` | Musiklogik, Audio, Metronom-Taktgeber, Tonerkennung (YIN) |
 | `tests/` | Tests, laufen mit Node ohne Browser |

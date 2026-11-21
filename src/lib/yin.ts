@@ -10,6 +10,16 @@ export interface Pitch {
   cents: number;
   /** Lautstärke (RMS) des Signals */
   level: number;
+  /** Wie eindeutig der Ton ist (0 … 1). Berührte/abgedämpfte Saiten liegen deutlich unter 0,9. */
+  clarity: number;
+  /** Millisekunden seit dem letzten Anschlag (plötzlicher Pegelanstieg) */
+  sinceAttack: number;
+}
+
+export interface YinResult {
+  freq: number;
+  /** 1 − Restfehler an der gefundenen Periode: nahe 1 = sauberer, periodischer Ton */
+  clarity: number;
 }
 
 /**
@@ -17,7 +27,7 @@ export interface Pitch {
  * Robuster gegen Obertöne als eine reine Frequenzanalyse – wichtig bei der Gitarre,
  * deren Obertöne oft lauter sind als der Grundton.
  */
-export function yin(buf: Float32Array, sampleRate: number, minFreq = 60, maxFreq = 1400, threshold = 0.15): number | null {
+export function yin(buf: Float32Array, sampleRate: number, minFreq = 60, maxFreq = 1400, threshold = 0.15): YinResult | null {
   const half = Math.floor(buf.length / 2);
   const tauMin = Math.max(2, Math.floor(sampleRate / maxFreq));
   const tauMax = Math.min(half - 1, Math.floor(sampleRate / minFreq));
@@ -54,12 +64,12 @@ export function yin(buf: Float32Array, sampleRate: number, minFreq = 60, maxFreq
   const x2 = d[tau + 1];
   const denom = 2 * (2 * d[tau] - x2 - x0);
   const better = denom ? tau + (x2 - x0) / denom : tau;
-  return sampleRate / better;
+  return { freq: sampleRate / better, clarity: Math.max(0, Math.min(1, 1 - d[tau])) };
 }
 
-export function freqToPitch(freq: number, level: number, a4 = 440): Pitch {
+export function freqToPitch(freq: number, level: number, a4 = 440, clarity = 1, sinceAttack = 0): Pitch {
   const exact = 69 + 12 * Math.log2(freq / a4);
   const midi = Math.round(exact);
-  return { freq, midi, cents: Math.round((exact - midi) * 100), level };
+  return { freq, midi, cents: Math.round((exact - midi) * 100), level, clarity, sinceAttack };
 }
 

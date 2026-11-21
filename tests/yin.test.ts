@@ -29,8 +29,9 @@ for (const base of NOTES) {
     test(`${freq.toFixed(2)} Hz`, () => {
       const got = yin(guitarLike(freq), SR);
       assert.ok(got, 'kein Ton erkannt');
+      assert.ok(got.clarity > 0.9, `sauberer Ton sollte klar sein (${got.clarity.toFixed(2)})`);
       const want = freqToPitch(freq, 0.1);
-      const p = freqToPitch(got, 0.1);
+      const p = freqToPitch(got.freq, 0.1);
       assert.equal(p.midi, want.midi, 'falscher Ton / falsche Oktave');
       assert.ok(Math.abs(p.cents - want.cents) <= 2, `Cent-Abweichung ${p.cents} statt ${want.cents}`);
     });
@@ -42,4 +43,15 @@ test('Stille wird nicht als Ton erkannt', () => {
   let seed = 7;
   for (let i = 0; i < N; i++) buf[i] = ((seed = (seed * 16807) % 2147483647) / 2147483647 - 0.5) * 0.002;
   assert.equal(yin(buf, SR), null);
+});
+
+test('Berührte Saite (Rauschen mit schwachem Ton) gilt nicht als klarer Ton', () => {
+  let seed = 3;
+  const buf = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    const noise = ((seed = (seed * 16807) % 2147483647) / 2147483647 - 0.5) * 0.2;
+    buf[i] = noise + 0.03 * Math.sin((2 * Math.PI * 110 * i) / SR);
+  }
+  const got = yin(buf, SR);
+  assert.ok(got === null || got.clarity < 0.88, `Klarheit ${got?.clarity.toFixed(2)} zu hoch`);
 });

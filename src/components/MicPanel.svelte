@@ -1,8 +1,11 @@
 <script lang="ts">
-  /** Start/Stopp, Eingangswahl (Mikrofon, Focusrite, Pod Go …), Kanal und Pegelanzeige. */
+  /**
+   * Mikrofon an/aus für Stimmgerät und Tonfinder – kompakt.
+   * Eingang und Kanal werden in den Einstellungen gewählt (gespeichert unter „gt-mic“).
+   */
   import { onDestroy, onMount } from 'svelte';
   import { load, save } from '../lib/storage';
-  import { PitchListener, type InputDevice, type MicError } from '../lib/pitch';
+  import { GATE, PitchListener, type MicError } from '../lib/pitch';
   import type { Messages } from '../i18n/ui';
 
   interface Props {
@@ -10,128 +13,104 @@
     t: Messages['mic'];
     startLabel: string;
     stopLabel: string;
+    settingsHref: string;
     running?: boolean;
     onstart?: () => void;
   }
-  let { listener, t, startLabel, stopLabel, running = $bindable(false), onstart }: Props = $props();
+  let { listener, t, startLabel, stopLabel, settingsHref, running = $bindable(false), onstart }: Props = $props();
 
-  const s = $state(load('gt-mic', { deviceId: '', channel: 0 }));
-  $effect(() => save('gt-mic', s));
-
-  let devices = $state<InputDevice[]>([]);
   let error = $state<MicError | null>(null);
   let level = $state(0);
-  let activeChannel = $state(1);
-  let channels = $state(0);
+  let label = $state('');
+  let channel = $state(1);
+  let suggest = $state(0);
+  let suggestSince = 0;
   let quietSince = $state(0);
   let now = $state(0);
-
-  // Pegel in dB → Balkenbreite (−60 dB … 0 dB)
-  const db = $derived(level > 0 ? 20 * Math.log10(level) : -100);
-  const meter = $derived(Math.max(0, Math.min(1, (db + 60) / 60)));
   const silent = $derived(running && quietSince > 0 && now - quietSince > 2500);
+  const db = $derived(level > 0 ? 20 * Math.log10(level) : -100);
 
   onMount(() => {
-    listener.onLevel = (l, ch) => {
-      level = l;
-      activeChannel = ch;
+    listener.onLevel = (levels) => {
+      const ch = Math.min(channel, levels.length) - 1;
+      level = levels[ch];
       now = performance.now();
-      if (l > 0.0015) quietSince = 0;
+      if (level > GATE) quietSince = 0;
       else if (!quietSince) quietSince = now;
+      const other = levels.reduce((b, l, i) => (i !== ch && l > (b < 0 ? 0 : levels[b]) ? i : b), -1);
+      if (level < GATE && other >= 0 && levels[other] > GATE * 3) {
+        if (!suggestSince) suggestSince = now;
+        if (now - suggestSince > 1000) suggest = other + 1;
+      } else {
+        suggestSince = 0;
+        suggest = 0;
+      }
     };
-    void refreshDevices();
-    navigator.mediaDevices?.addEventListener?.('devicechange', refreshDevices);
   });
   onDestroy(() => {
     listener.stop();
     listener.onLevel = null;
-    navigator.mediaDevices?.removeEventListener?.('devicechange', refreshDevices);
   });
 
-  async function refreshDevices() {
-    devices = await PitchListener.inputs().catch(() => []);
-  }
-
   async function start() {
-    listener.deviceId = s.deviceId;
-    listener.channel = s.channel;
+    // Immer frisch lesen – die Einstellungen können sich auf der Einstellungsseite geändert haben
+    const cfg = load('gt-mic', { deviceId: '', channel: 1, channels: 2 });
+    channel = cfg.channel >= 1 ? cfg.channel : 1;
+    listener.deviceId = cfg.deviceId;
+    listener.channel = channel;
     error = await listener.start();
     running = !error;
-    channels = listener.channels;
-    s.deviceId = listener.deviceId; // falls auf Standard zurückgefallen
-    quietSince = performance.now();
-    await refreshDevices(); // nach der Erlaubnis gibt es echte Gerätenamen
-    if (running) onstart?.();
+    if (running) {
+      label = listener.deviceLabel;
+      save('gt-mic', { ...cfg, deviceId: listener.deviceId, channel, channels: listener.channels });
+      quietSince = performance.now();
+      onstart?.();
+    }
   }
 
   function stop() {
     listener.stop();
     running = false;
     level = 0;
+    suggest = 0;
   }
 
-  async function changeDevice() {
-    s.channel = 0;
-    if (running) {
-      stop();
-      await start();
-    }
-  }
-
-  function changeChannel() {
-    listener.channel = s.channel;
+  function switchTo(ch: number) {
+    channel = ch;
+    listener.channel = ch;
+    suggest = 0;
+    suggestSince = 0;
+    const cfg = load('gt-mic', { deviceId: '', channel: 1, channels: 2 });
+    save('gt-mic', { ...cfg, channel: ch });
   }
 </script>
 
 <button class="btn mic" class:ghost={running} onclick={() => (running ? stop() : start())}>{running ? stopLabel : startLabel}</button>
 
 {#if error}
-  <p class="msg error">{t[error]}</p>
-{/if}
-
-{#if running || devices.length > 1}
-  <div class="io">
-    <label>
-      <span>{t.input}</span>
-      <select bind:value={s.deviceId} onchange={changeDevice}>
-        <option value="">{t.standard}</option>
-        {#each devices.filter((d) => d.id) as d (d.id)}
-          <option value={d.id}>{d.label}</option>
-        {/each}
-      </select>
-    </label>
-    {#if running && channels > 1}
-      <label class="ch">
-        <span>{t.channel}</span>
-        <select bind:value={s.channel} onchange={changeChannel}>
-          <option value={0}>{t.auto}{s.channel === 0 ? ` (${activeChannel})` : ''}</option>
-          {#each Array(channels) as _, i}<option value={i + 1}>{i + 1}</option>{/each}
-        </select>
-      </label>
-    {/if}
-  </div>
-{/if}
-
-{#if running}
-  <div class="meter" role="meter" aria-label={t.level} aria-valuemin={-60} aria-valuemax={0} aria-valuenow={Math.round(db)}>
-    <span>{t.level}</span>
-    <div class="bar"><i style:width="{meter * 100}%" class:hot={db > -3}></i></div>
-    <span class="db">{db > -100 ? `${Math.round(db)} dB` : '–'}</span>
-  </div>
-  <p class="msg">{silent ? t.noSignal : t.tip}</p>
+  <p class="msg error">{t[error]} <a href={settingsHref}>{t.change}</a></p>
+{:else if running}
+  <p class="status">
+    <i class="dot" class:on={db > -55} style:opacity={0.35 + Math.max(0, Math.min(1, (db + 60) / 50)) * 0.65}></i>
+    <span class="name">{label || t.standard}{listener.channels > 1 ? ` · ${t.channel} ${channel}` : ''}</span>
+    <a href={settingsHref}>{t.change}</a>
+  </p>
+  {#if suggest}
+    <button class="btn ghost switch" onclick={() => switchTo(suggest)}>{t.switchTo.replace('{n}', String(suggest))}</button>
+  {:else if silent}
+    <p class="msg">{t.noSignal}</p>
+  {/if}
 {/if}
 
 <style>
   .btn.mic { display: block; width: 100%; }
-  .io { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
-  .io label { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; font-size: 12px; color: var(--muted); }
-  .io label.ch { flex: 0 0 96px; }
-  select { font: inherit; font-size: 14px; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 7px 8px; width: 100%; min-width: 0; }
-  .meter { display: grid; grid-template-columns: auto 1fr 52px; gap: 10px; align-items: center; margin-top: 12px; font-size: 12px; color: var(--muted); }
-  .bar { height: 8px; border-radius: 99px; background: var(--panel2); overflow: hidden; }
-  .bar i { display: block; height: 100%; background: var(--ok); border-radius: 99px; transition: width 0.05s linear; }
-  .bar i.hot { background: #d9534f; }
-  .db { text-align: right; font-variant-numeric: tabular-nums; }
+  .status { display: flex; align-items: center; gap: 8px; margin: 10px 0 0; font-size: 13px; color: var(--muted); min-width: 0; }
+  .status .name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .status a { color: var(--accent); white-space: nowrap; font-size: 12.5px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--line); flex-shrink: 0; transition: opacity 0.05s; }
+  .dot.on { background: var(--ok); }
+  .btn.switch { display: block; width: 100%; margin-top: 10px; font-size: 14px; padding: 9px; border-color: var(--accent); color: var(--accent); }
   .msg { color: var(--muted); font-size: 12.5px; margin: 8px 0 0; }
   .msg.error { color: #c0392b; font-size: 14px; }
+  .msg a { color: var(--accent); }
 </style>
