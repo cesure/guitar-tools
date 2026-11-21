@@ -4,7 +4,8 @@
   import Seg from './Seg.svelte';
   import { pluck } from '../lib/audio';
   import { load, save } from '../lib/storage';
-  import { PitchListener, type MicError, type Pitch } from '../lib/pitch';
+  import MicPanel from './MicPanel.svelte';
+  import { PitchListener, type Pitch } from '../lib/pitch';
   import { NATURALS, NOTE_NAMES, STRING_LABELS, TUNING, midiToFreq } from '../lib/music';
   import type { Lang, Messages } from '../i18n/ui';
 
@@ -110,7 +111,6 @@
   /* ---------- Mikrofon ---------- */
   let heard = $state<Pitch | null>(null);
   let micOn = $state(false);
-  let micError = $state<MicError | null>(null);
   let stable = 0;
   let stableMidi = -1;
 
@@ -126,17 +126,9 @@
     if (stable === 3 && note !== null && targetMidis(activeString, note).includes(p.midi)) hit();
   });
 
-  async function toggleMic() {
-    if (micOn) {
-      listener.stop();
-      micOn = false;
-      heard = null;
-      return;
-    }
-    micError = await listener.start();
-    micOn = !micError;
-    if (micOn && note === null) next();
-  }
+  $effect(() => {
+    if (!micOn) heard = null;
+  });
   onDestroy(() => listener.stop());
 
   function onkeydown(e: KeyboardEvent) {
@@ -195,8 +187,8 @@
 
   <div class="card">
     <div class="label">{t.mic}</div>
-    <button class="btn mic" class:ghost={micOn} onclick={toggleMic}>{micOn ? t.micStop : t.micStart}</button>
-    <p class="small">{micError ? mic[micError] : t.micHint}</p>
+    <MicPanel {listener} t={mic} startLabel={t.micStart} stopLabel={t.micStop} bind:running={micOn} onstart={() => note === null && next()} />
+    {#if !micOn}<p class="small">{t.micHint}</p>{/if}
 
     <div class="label" style="margin-top:18px">{t.settings}</div>
     <div class="field">
@@ -253,7 +245,6 @@
   .correct .feedback { color: var(--ok); }
   .keys { color: var(--muted); font-size: 12px; margin: 18px 0 0; }
   .btn:disabled { opacity: 0.4; cursor: default; }
-  .btn.mic { display: block; width: 100%; }
   .small { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
   .field.off { opacity: 0.45; }
   .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }

@@ -2,7 +2,8 @@
   import { onDestroy } from 'svelte';
   import { pluck } from '../lib/audio';
   import { load, save } from '../lib/storage';
-  import { PitchListener, type MicError, type Pitch } from '../lib/pitch';
+  import MicPanel from './MicPanel.svelte';
+  import { PitchListener, type Pitch } from '../lib/pitch';
   import { NOTE_NAMES, STRING_LABELS, TUNING, midiToFreq } from '../lib/music';
   import type { Lang, Messages } from '../i18n/ui';
 
@@ -13,22 +14,14 @@
 
   let pitch = $state<Pitch | null>(null);
   let running = $state(false);
-  let error = $state<MicError | null>(null);
   const listener = new PitchListener((p) => (pitch = p));
   $effect(() => {
     listener.a4 = Math.min(450, Math.max(430, s.a4 || 440));
   });
 
-  async function toggle() {
-    if (running) {
-      listener.stop();
-      running = false;
-      pitch = null;
-      return;
-    }
-    error = await listener.start();
-    running = !error;
-  }
+  $effect(() => {
+    if (!running) pitch = null;
+  });
   onDestroy(() => listener.stop());
 
   const names = $derived(NOTE_NAMES[lang]);
@@ -70,8 +63,7 @@
   <p class="status">{running ? status : ' '}</p>
   <p class="hz">{pitch ? `${pitch.freq.toFixed(1)} Hz · ${cents > 0 ? '+' : ''}${cents} Cent` : ' '}</p>
 
-  <button class="btn" class:ghost={running} onclick={toggle}>{running ? t.stop : t.start}</button>
-  {#if error}<p class="error">{mic[error]}</p>{/if}
+  <div class="micwrap"><MicPanel {listener} t={mic} startLabel={t.start} stopLabel={t.stop} bind:running /></div>
 </div>
 
 <div class="card" style="margin-top:16px">
@@ -109,7 +101,7 @@
   .status { font-weight: 600; margin: 8px 0 0; min-height: 1.5em; }
   .ok .status { color: var(--ok); }
   .hz { color: var(--muted); font-size: 13px; margin: 2px 0 18px; font-variant-numeric: tabular-nums; }
-  .error { color: #c0392b; font-size: 14px; margin: 12px 0 0; }
+  .micwrap { text-align: left; max-width: 380px; margin: 0 auto; }
   .strings { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
   .string { all: unset; cursor: pointer; text-align: center; padding: 10px 0; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); }
   .string strong { display: block; font-size: 20px; }

@@ -172,7 +172,15 @@ const de = {
   mic: {
     unsupported: 'Dieser Browser kann nicht aufs Mikrofon zugreifen.',
     denied: 'Kein Zugriff aufs Mikrofon – bitte in den Browser-Einstellungen erlauben.',
-    failed: 'Das Mikrofon konnte nicht gestartet werden.',
+    notfound: 'Kein Eingang gefunden. Ist das Interface angeschlossen?',
+    failed: 'Der Eingang konnte nicht gestartet werden. Anderen Eingang wählen oder Interface neu verbinden.',
+    input: 'Eingang',
+    standard: 'Systemstandard',
+    channel: 'Kanal',
+    auto: 'Auto',
+    level: 'Pegel',
+    noSignal: 'Kein Signal? Gain am Interface aufdrehen, Lautstärke an der Gitarre prüfen oder anderen Eingang/Kanal wählen.',
+    tip: 'Tipp: Hall, Delay oder starke Verzerrung erschweren die Erkennung – ein cleaner Sound funktioniert am besten.',
   },
 };
 
@@ -324,7 +332,15 @@ const en: Messages = {
   mic: {
     unsupported: 'This browser cannot access the microphone.',
     denied: 'No microphone access – please allow it in your browser settings.',
-    failed: 'The microphone could not be started.',
+    notfound: 'No input found. Is the interface connected?',
+    failed: 'The input could not be started. Choose another input or reconnect the interface.',
+    input: 'Input',
+    standard: 'System default',
+    channel: 'Channel',
+    auto: 'Auto',
+    level: 'Level',
+    noSignal: 'No signal? Turn up the gain on your interface, check the guitar volume or pick another input/channel.',
+    tip: 'Tip: reverb, delay or heavy distortion make detection harder – a clean sound works best.',
   },
 };
 
