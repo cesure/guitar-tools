@@ -33,7 +33,8 @@ export const SCALES = {
 } as const satisfies Record<string, readonly number[]>;
 export type ScaleId = keyof typeof SCALES;
 
-export const MAIN_SCALES: ScaleId[] = ['minor-penta', 'major-penta', 'blues', 'major', 'minor'];
+/** Reihenfolge: Grundlagen zuerst, Paare (Dur/Moll) nebeneinander. */
+export const MAIN_SCALES: ScaleId[] = ['major', 'minor', 'major-penta', 'minor-penta', 'blues'];
 export const MORE_SCALES: ScaleId[] = ['harmonic-minor', 'melodic-minor', 'dorian', 'mixolydian'];
 
 /** Halbtöne vom Grundton der Skala zum Grundton der zugehörigen Dur-Tonart (A-Moll → C-Dur = +3). */
@@ -126,13 +127,16 @@ export function cagedShapes(root: number, scale: ScaleId): Shape[] {
 
 /* ---------------- Akkorde ---------------- */
 
-export type ChordQuality = '' | 'm' | '7' | 'maj7' | 'add9' | 'sus2' | 'sus4';
+export type ChordQuality = '' | 'm' | '7' | 'maj7' | 'm7' | 'add9' | 'sus2' | 'sus4';
 export type ChordGroup = 'major' | 'minor' | 'seventh' | 'variant';
 
 export const CHORD_INTERVALS: Record<ChordQuality, number[]> = {
-  '': [0, 4, 7], m: [0, 3, 7], '7': [0, 4, 7, 10], maj7: [0, 4, 7, 11],
+  '': [0, 4, 7], m: [0, 3, 7], '7': [0, 4, 7, 10], maj7: [0, 4, 7, 11], m7: [0, 3, 7, 10],
   add9: [0, 2, 4, 7], sus2: [0, 2, 7], sus4: [0, 5, 7],
 };
+
+/** Akkordarten im Akkord-Finder (für jeden Grundton gibt es mindestens einen Griff). */
+export const FINDER_QUALITIES: ChordQuality[] = ['', 'm', '7', 'maj7', 'm7', 'sus2', 'sus4'];
 
 export interface Chord {
   root: number;
@@ -175,6 +179,67 @@ export const CHORDS: Chord[] = [
   { root: 9, quality: 'sus2', group: 'variant', frets: [x, 0, 2, 2, 0, 0], fingers: [0, 0, 1, 2, 0, 0] },
   { root: 9, quality: 'sus4', group: 'variant', frets: [x, 0, 2, 2, 3, 0], fingers: [0, 0, 1, 2, 3, 0] },
 ];
+
+/**
+ * Verschiebbare Griffe: E-Form (Grundton auf der tiefen E-Saite) und A-Form (Grundton auf der A-Saite).
+ * Bünde relativ zum Grundton-Bund, Finger für die Barré-Variante.
+ */
+type Template = { frets: (number | null)[]; fingers: number[]; barre: boolean };
+const MOVABLE: Record<'E' | 'A', Partial<Record<ChordQuality, Template>>> = {
+  E: {
+    '': { frets: [0, 2, 2, 1, 0, 0], fingers: [1, 3, 4, 2, 1, 1], barre: true },
+    m: { frets: [0, 2, 2, 0, 0, 0], fingers: [1, 3, 4, 1, 1, 1], barre: true },
+    '7': { frets: [0, 2, 0, 1, 0, 0], fingers: [1, 3, 1, 2, 1, 1], barre: true },
+    maj7: { frets: [0, x, 1, 1, 0, x], fingers: [1, 0, 3, 4, 2, 0], barre: false },
+    m7: { frets: [0, 2, 0, 0, 0, 0], fingers: [1, 3, 1, 1, 1, 1], barre: true },
+    sus4: { frets: [0, 2, 2, 2, 0, 0], fingers: [1, 2, 3, 4, 1, 1], barre: true },
+  },
+  A: {
+    '': { frets: [x, 0, 2, 2, 2, 0], fingers: [0, 1, 2, 3, 4, 1], barre: true },
+    m: { frets: [x, 0, 2, 2, 1, 0], fingers: [0, 1, 3, 4, 2, 1], barre: true },
+    '7': { frets: [x, 0, 2, 0, 2, 0], fingers: [0, 1, 3, 1, 4, 1], barre: true },
+    maj7: { frets: [x, 0, 2, 1, 2, 0], fingers: [0, 1, 3, 2, 4, 1], barre: true },
+    m7: { frets: [x, 0, 2, 0, 1, 0], fingers: [0, 1, 3, 1, 2, 1], barre: true },
+    sus2: { frets: [x, 0, 2, 2, 0, 0], fingers: [0, 1, 3, 4, 1, 1], barre: true },
+    sus4: { frets: [x, 0, 2, 2, 3, 0], fingers: [0, 1, 2, 3, 4, 1], barre: true },
+  },
+};
+
+export interface Voicing extends Chord {
+  kind: 'open' | 'E' | 'A';
+  /** Bund des Grundtons (0 = offen) */
+  position: number;
+}
+
+/** Alle bekannten Griffe für Grundton + Akkordart: offene zuerst, dann nach Lage sortiert. */
+export function chordVoicings(root: number, quality: ChordQuality): Voicing[] {
+  const out: Voicing[] = [];
+  const key = (frets: (number | null)[]) => frets.join(',');
+
+  (['E', 'A'] as const).forEach((shape) => {
+    const tpl = MOVABLE[shape][quality];
+    if (!tpl) return;
+    const open = TUNING[shape === 'E' ? 0 : 1] % 12;
+    const r = (root - open + 12) % 12;
+    const frets = tpl.frets.map((f) => (f === null ? null : f + r));
+    // Offene Variante: Finger rücken um eins nach unten, leere Saiten brauchen keinen Finger
+    const fingers = tpl.fingers.map((fg, i) => (frets[i] === null ? 0 : r === 0 ? (frets[i] === 0 ? 0 : fg - 1) : fg));
+    const zeroStrings = tpl.frets.flatMap((f, i) => (f === 0 ? [i] : []));
+    out.push({
+      root, quality, group: 'major', frets, fingers, kind: r === 0 ? 'open' : shape, position: r,
+      barre: tpl.barre && r > 0 ? { fret: r, from: zeroStrings[0], to: zeroStrings[zeroStrings.length - 1] } : undefined,
+    });
+  });
+
+  // Offene Griffe aus der Sammlung ergänzen (z. B. C, G, D, Cadd9)
+  CHORDS.filter((c) => c.root === root && c.quality === quality).forEach((c) => {
+    if (!out.some((v) => key(v.frets) === key(c.frets))) {
+      out.push({ ...c, kind: c.barre ? (c.frets[0] === null ? 'A' : 'E') : 'open', position: c.barre?.fret ?? 0 });
+    }
+  });
+
+  return out.sort((a, b) => (a.kind === 'open' ? 0 : 1) - (b.kind === 'open' ? 0 : 1) || a.position - b.position);
+}
 
 /** Tonklassen, die ein Griff tatsächlich erklingen lässt (tiefste zuerst, ohne Doppelte). */
 export function chordPitchClasses(chord: Chord): number[] {

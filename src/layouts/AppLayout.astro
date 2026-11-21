@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import { pwaInfo } from 'virtual:pwa-info';
+import Icon from '../components/Icon.astro';
 import { languages, navGroups, toolHref, ui, type Lang, type Tool } from '../i18n/ui';
 
 interface Props {
@@ -10,7 +11,6 @@ interface Props {
 const { lang, tool } = Astro.props;
 const t = ui[lang];
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
-const icons: Record<Tool, string> = { finder: '◎', metronome: '◷', tuner: '∿', scales: '▦', chords: '▤', settings: '⚙' };
 const langs = Object.keys(languages) as Lang[];
 ---
 
@@ -31,20 +31,20 @@ const langs = Object.keys(languages) as Lang[];
       try {
         var saved = localStorage.getItem('gt-theme');
         if (saved) document.documentElement.dataset.theme = saved;
+        localStorage.setItem('gt-lang', document.documentElement.lang);
       } catch (e) {}
     </script>
   </head>
   <body>
     <aside class="sidebar">
-      <a class="brand" href={toolHref(lang, 'finder')}><img src={`${base}favicon.svg`} alt="" /> Guitar Tools</a>
+      <a class="brand" href={toolHref(lang, 'metronome')}><img src={`${base}favicon.svg`} alt="" /> Guitar Tools</a>
       {
         navGroups.map((g) => (
           <nav aria-label={t.nav[g.id]}>
             <div class="nav-group">{t.nav[g.id]}</div>
             {g.tools.map((id) => (
               <a href={toolHref(lang, id)} aria-current={id === tool ? 'page' : undefined}>
-                <span class="ic" aria-hidden="true">{icons[id]}</span> {t.nav[id]}
-                {id === 'tuner' && <span class="soon">{t.nav.soon}</span>}
+                <span class="ic"><Icon name={id} /></span> {t.nav[id]}
               </a>
             ))}
           </nav>
@@ -52,14 +52,14 @@ const langs = Object.keys(languages) as Lang[];
       }
       <nav class="nav-bottom" aria-label={t.nav.settings}>
         <a href={toolHref(lang, 'settings')} aria-current={tool === 'settings' ? 'page' : undefined}>
-          <span class="ic" aria-hidden="true">{icons.settings}</span> {t.nav.settings}
+          <span class="ic"><Icon name="settings" /></span> {t.nav.settings}
         </a>
       </nav>
     </aside>
 
     <header class="mobile-top">
-      <a class="brand" href={toolHref(lang, 'finder')}><img src={`${base}favicon.svg`} alt="" /> <span>Guitar Tools</span></a>
-      <a class="gear" href={toolHref(lang, 'settings')} aria-label={t.nav.settings} aria-current={tool === 'settings' ? 'page' : undefined}>⚙</a>
+      <a class="brand" href={toolHref(lang, 'metronome')}><img src={`${base}favicon.svg`} alt="" /> <span>Guitar Tools</span></a>
+      <a class="gear" href={toolHref(lang, 'settings')} aria-label={t.nav.settings} aria-current={tool === 'settings' ? 'page' : undefined}><Icon name="settings" size={22} /></a>
     </header>
 
     <main>
@@ -71,7 +71,7 @@ const langs = Object.keys(languages) as Lang[];
         navGroups.map((g, gi) =>
           g.tools.map((id, i) => (
             <a href={toolHref(lang, id)} aria-current={id === tool ? 'page' : undefined} class={gi > 0 && i === 0 ? 'group-start' : ''}>
-              <span class="ic" aria-hidden="true">{icons[id]}</span>
+              <span class="ic"><Icon name={id} /></span>
               {t.navShort[id]}
             </a>
           )),

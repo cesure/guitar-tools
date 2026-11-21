@@ -4,6 +4,7 @@ import NoteFinder from '../../components/NoteFinder.svelte';
 import Metronome from '../../components/Metronome.svelte';
 import ScaleMap from '../../components/ScaleMap.svelte';
 import ChordChart from '../../components/ChordChart.svelte';
+import Tuner from '../../components/Tuner.svelte';
 import { languages, slugs, tools, toolHref, ui, type Lang, type Tool } from '../../i18n/ui';
 
 export function getStaticPaths() {
@@ -31,7 +32,7 @@ const themes = [
       <section>
         <h1>{t.finder.title}</h1>
         <p class="sub">{t.finder.sub}</p>
-        <NoteFinder client:load t={t.finder} lang={lang} />
+        <NoteFinder client:load t={t.finder} mic={t.mic} lang={lang} />
       </section>
     )
   }
@@ -49,11 +50,7 @@ const themes = [
       <section>
         <h1>{t.tuner.title}</h1>
         <p class="sub">{t.tuner.sub}</p>
-        <div class="card tuner">
-          <div class="needle" />
-          <div class="note">A</div>
-          <p class="hint">440,0 Hz</p>
-        </div>
+        <Tuner client:load t={t.tuner} mic={t.mic} lang={lang} />
       </section>
     )
   }
@@ -82,7 +79,10 @@ const themes = [
         <p class="sub">{t.prefs.sub}</p>
         <div class="card">
           <div class="field">
-            <span>{t.prefs.theme}</span>
+            <div>
+              <span>{t.prefs.theme}</span>
+              <p class="note-small">{t.prefs.themeHint}</p>
+            </div>
             <div class="seg" data-theme-switch role="radiogroup" aria-label={t.prefs.theme}>
               {themes.map(([v, l]) => (
                 <button type="button" role="radio" data-v={v} class={v === 'system' ? 'active' : ''}>
@@ -91,7 +91,6 @@ const themes = [
               ))}
             </div>
           </div>
-          <p class="note-small">{t.prefs.themeHint}</p>
           <div class="field">
             <span>{t.prefs.lang}</span>
             <div class="seg">
@@ -117,11 +116,7 @@ const themes = [
 </AppLayout>
 
 <style>
-  .tuner { text-align: center; padding: 40px 18px; }
-  .needle { width: 280px; max-width: 100%; height: 140px; margin: 0 auto; border-radius: 280px 280px 0 0; border: 2px solid var(--line); border-bottom: none; position: relative; }
-  .needle::after { content: ''; position: absolute; left: 50%; bottom: 0; width: 2px; height: 120px; background: var(--accent); transform-origin: bottom; }
-  .note { font-size: 80px; font-weight: 600; line-height: 1.1; margin-top: 12px; }
   .settings { max-width: 640px; }
-  .note-small { color: var(--muted); font-size: 13px; margin: -4px 0 8px; }
-  .settings .field { flex-wrap: wrap; }
+  .note-small { color: var(--muted); font-size: 13px; margin: 2px 0 0; }
+  .settings .field { flex-wrap: wrap; padding: 14px 0; }
 </style>

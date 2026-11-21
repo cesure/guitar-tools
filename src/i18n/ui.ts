@@ -5,19 +5,19 @@ export const languages = { de: 'Deutsch', en: 'English' } as const;
 export type Lang = keyof typeof languages;
 export const defaultLang: Lang = 'de';
 
-export const tools = ['finder', 'metronome', 'tuner', 'scales', 'chords', 'settings'] as const;
+export const tools = ['metronome', 'tuner', 'finder', 'scales', 'chords', 'settings'] as const;
 export type Tool = (typeof tools)[number];
 
 /** Gruppen der Navigation. Einstellungen stehen separat unten. */
 export const navGroups = [
-  { id: 'practice', tools: ['finder', 'metronome', 'tuner'] },
+  { id: 'practice', tools: ['metronome', 'tuner', 'finder'] },
   { id: 'reference', tools: ['scales', 'chords'] },
 ] as const satisfies { id: string; tools: Tool[] }[];
 
 /** URL-Pfad je Sprache. Leerer String = Startseite der Sprache. */
 export const slugs: Record<Lang, Record<Tool, string>> = {
-  de: { finder: '', metronome: 'metronom', tuner: 'stimmgeraet', scales: 'skalen', chords: 'akkorde', settings: 'einstellungen' },
-  en: { finder: '', metronome: 'metronome', tuner: 'tuner', scales: 'scales', chords: 'chords', settings: 'settings' },
+  de: { metronome: '', finder: 'tonfinder', tuner: 'stimmgeraet', scales: 'skalen', chords: 'akkorde', settings: 'einstellungen' },
+  en: { metronome: '', finder: 'note-finder', tuner: 'tuner', scales: 'scales', chords: 'chords', settings: 'settings' },
 };
 
 export function toolHref(lang: Lang, tool: Tool): string {
@@ -61,6 +61,20 @@ const de = {
     avg: 'Ø Zeit',
     minutes: 'Minuten',
     keys: 'Leertaste: nächster Ton · R: wiederholen',
+    mode: 'Modus',
+    modeOne: 'Eine Saite',
+    modeAll: 'Alle Saiten',
+    allTask: 'auf allen Saiten, von tief nach hoch (Bund 0–12)',
+    mic: 'Mikrofon',
+    micStart: '🎤 Mit Mikrofon üben',
+    micStop: 'Mikrofon aus',
+    micHint: 'Mit Mikrofon hört die App zu und geht beim richtigen Ton automatisch weiter.',
+    listening: 'Hört zu …',
+    heard: 'Gehört',
+    correct: 'Richtig!',
+    found: 'Gefunden',
+    done: 'Alle gefunden!',
+    fret: 'Bund',
     stringNames: ['tiefen E-Saite', 'A-Saite', 'D-Saite', 'G-Saite', 'H-Saite', 'hohen e-Saite'],
   },
   metronome: {
@@ -127,19 +141,38 @@ const de = {
   },
   chords: {
     title: 'Akkorde',
-    sub: 'Die wichtigsten Griffe – vom Lagerfeuer bis zum Septakkord. Antippen zum Anhören.',
-    filter: 'Auswahl',
-    groups: { basic: 'Lagerfeuer', major: 'Dur', minor: 'Moll', seventh: 'Sept', variant: 'Varianten', all: 'Alle' } as Record<string, string>,
+    sub: 'Jeden Akkord nachschlagen – mit offenen Griffen und Barré-Varianten. Antippen zum Anhören.',
     labels: 'Beschriftung',
     fingers: 'Finger',
     notes: 'Töne',
-    qualities: { '': 'Dur', m: 'Moll', '7': 'Septakkord', maj7: 'Major 7', add9: 'add9', sus2: 'sus2', sus4: 'sus4' } as Record<string, string>,
+    qualities: { '': 'Dur', m: 'Moll', '7': 'Septakkord', maj7: 'Major 7', m7: 'Moll-Sept', add9: 'add9', sus2: 'sus2', sus4: 'sus4' } as Record<string, string>,
+    finder: 'Akkord suchen',
+    finderSub: 'Grundton und Akkordart wählen – alle passenden Griffe erscheinen darunter.',
+    kind: 'Art',
+    open: 'offen',
+    shapeE: 'E-Form',
+    shapeA: 'A-Form',
+    fret: 'Bund',
     legend: 'Zahlen = Finger (1 Zeigefinger … 4 kleiner Finger) · × nicht anschlagen · ○ leere Saite · Grundton farbig',
     play: 'Anhören',
   },
   tuner: {
     title: 'Stimmgerät',
-    sub: 'Kommt in einer späteren Version – braucht Mikrofonzugriff.',
+    sub: 'Saite anschlagen – die Nadel zeigt, ob sie zu tief oder zu hoch ist.',
+    start: '🎤 Mikrofon starten',
+    stop: 'Stoppen',
+    play: 'Schlag eine Saite an …',
+    flat: 'zu tief',
+    sharp: 'zu hoch',
+    inTune: 'stimmt',
+    reference: 'Kammerton',
+    strings: 'Standardstimmung – antippen für den Referenzton',
+    privacy: 'Der Ton wird nur auf deinem Gerät ausgewertet und nirgends gespeichert.',
+  },
+  mic: {
+    unsupported: 'Dieser Browser kann nicht aufs Mikrofon zugreifen.',
+    denied: 'Kein Zugriff aufs Mikrofon – bitte in den Browser-Einstellungen erlauben.',
+    failed: 'Das Mikrofon konnte nicht gestartet werden.',
   },
 };
 
@@ -180,6 +213,20 @@ const en: Messages = {
     avg: 'Avg. time',
     minutes: 'Minutes',
     keys: 'Space: next note · R: repeat',
+    mode: 'Mode',
+    modeOne: 'One string',
+    modeAll: 'All strings',
+    allTask: 'on every string, low to high (frets 0–12)',
+    mic: 'Microphone',
+    micStart: '🎤 Practise with microphone',
+    micStop: 'Microphone off',
+    micHint: 'With the microphone on, the app listens and moves on when you play the right note.',
+    listening: 'Listening …',
+    heard: 'Heard',
+    correct: 'Correct!',
+    found: 'Found',
+    done: 'All found!',
+    fret: 'fret',
     stringNames: ['low E string', 'A string', 'D string', 'G string', 'B string', 'high e string'],
   },
   metronome: {
@@ -246,19 +293,38 @@ const en: Messages = {
   },
   chords: {
     title: 'Chords',
-    sub: 'The essential shapes – from campfire songs to seventh chords. Tap to listen.',
-    filter: 'Selection',
-    groups: { basic: 'Campfire', major: 'Major', minor: 'Minor', seventh: '7th', variant: 'Variants', all: 'All' },
+    sub: 'Look up any chord – open shapes and barre versions. Tap to listen.',
     labels: 'Labels',
     fingers: 'Fingers',
     notes: 'Notes',
-    qualities: { '': 'major', m: 'minor', '7': 'dominant 7th', maj7: 'major 7th', add9: 'add9', sus2: 'sus2', sus4: 'sus4' },
+    qualities: { '': 'major', m: 'minor', '7': 'dominant 7th', maj7: 'major 7th', m7: 'minor 7th', add9: 'add9', sus2: 'sus2', sus4: 'sus4' },
+    finder: 'Find a chord',
+    finderSub: 'Pick a root and chord type – all matching shapes appear below.',
+    kind: 'Type',
+    open: 'open',
+    shapeE: 'E shape',
+    shapeA: 'A shape',
+    fret: 'fret',
     legend: 'Numbers = fingers (1 index … 4 pinky) · × don’t play · ○ open string · root in color',
     play: 'Listen',
   },
   tuner: {
     title: 'Tuner',
-    sub: 'Coming in a later version – needs microphone access.',
+    sub: 'Pluck a string – the needle shows whether it is too low or too high.',
+    start: '🎤 Start microphone',
+    stop: 'Stop',
+    play: 'Pluck a string …',
+    flat: 'too low',
+    sharp: 'too high',
+    inTune: 'in tune',
+    reference: 'Reference pitch',
+    strings: 'Standard tuning – tap for a reference tone',
+    privacy: 'Sound is analysed on your device only and never stored.',
+  },
+  mic: {
+    unsupported: 'This browser cannot access the microphone.',
+    denied: 'No microphone access – please allow it in your browser settings.',
+    failed: 'The microphone could not be started.',
   },
 };
 

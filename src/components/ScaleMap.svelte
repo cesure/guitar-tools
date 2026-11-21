@@ -10,7 +10,7 @@
   let { t, lang }: { t: Messages['scales']; lang: Lang } = $props();
 
   const FRETS = 15;
-  const DEFAULTS = { root: 9, scale: 'minor-penta' as ScaleId, shape: 0, labels: 'note' as 'note' | 'iv' };
+  const DEFAULTS = { root: 0, scale: 'major' as ScaleId, shape: 0, labels: 'note' as 'note' | 'iv' };
   const s = $state({ ...DEFAULTS });
   let ready = false;
   let copied = $state(false);
