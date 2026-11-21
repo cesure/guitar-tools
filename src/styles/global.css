@@ -99,6 +99,9 @@ input[type='checkbox'] { accent-color: var(--accent); width: 18px; height: 18px;
   .seg:not(.small) { display: flex; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; max-width: 100%; }
   .card, .grid2 > * { min-width: 0; }
   .seg:not(.small) > * { flex: 1 0 auto; white-space: nowrap; }
+  /* Raster statt Wischen: alle Optionen sofort sichtbar */
+  .seg.grid { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); overflow: visible; }
+  .seg.grid > * { padding: 9px 4px; overflow: hidden; text-overflow: ellipsis; }
   .tabbar {
     display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
     background: color-mix(in srgb, var(--panel) 88%, transparent); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);

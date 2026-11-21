@@ -4,12 +4,14 @@
     items: { value: T; label: string }[];
     value: T;
     small?: boolean;
+    /** Auf dem Handy als Raster mit so vielen Spalten statt als wischbare Zeile */
+    cols?: number;
     label?: string;
   }
-  let { items, value = $bindable(), small = false, label }: Props = $props();
+  let { items, value = $bindable(), small = false, cols = 0, label }: Props = $props();
 </script>
 
-<div class="seg" class:small role="radiogroup" aria-label={label}>
+<div class="seg" class:small class:grid={cols > 0} style:--cols={cols || null} role="radiogroup" aria-label={label}>
   {#each items as item (String(item.value))}
     <button
       type="button"

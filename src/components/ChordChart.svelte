@@ -58,9 +58,9 @@
 
 <div class="card controls">
   <div class="wide"><div class="label">{t.finder}</div><p class="hint-left">{t.finderSub}</p></div>
-  <div class="wide"><Seg items={rootNames.map((n, i) => ({ value: i, label: n }))} bind:value={find.root} label={t.finder} /></div>
+  <div class="wide"><Seg cols={6} items={rootNames.map((n, i) => ({ value: i, label: n }))} bind:value={find.root} label={t.finder} /></div>
   <div class="wide">
-    <Seg items={FINDER_QUALITIES.map((q) => ({ value: q, label: `${rootNames[find.root]}${q}` }))} bind:value={find.quality} label={t.kind} />
+    <Seg cols={4} items={FINDER_QUALITIES.map((q) => ({ value: q, label: `${rootNames[find.root]}${q}` }))} bind:value={find.quality} label={t.kind} />
   </div>
   <div><div class="label">{t.labels}</div><Seg small items={[{ value: 'fingers', label: t.fingers }, { value: 'notes', label: t.notes }]} bind:value={s.labels} label={t.labels} /></div>
 </div>

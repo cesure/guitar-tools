@@ -38,6 +38,7 @@ Skalen, Akkord-Finder. Live: https://cesure.github.io/guitar-tools/
 - Einstellungen im localStorage (`gt-theme`, `gt-lang`, `gt-metronome`, `gt-finder`, `gt-chords`,
   `gt-tuner`); Skalen-/Akkordwahl steht in der URL (teilbar).
 - Layout: ab 720px Seitenleiste, darunter Tab-Leiste unten. Helles/dunkles Theme über CSS-Variablen.
+  Auswahl-Leisten (`Seg`) mit vielen Optionen bekommen `cols={n}` → auf dem Handy Raster statt Wischen.
 
 ## Tonerkennung (Feintuning)
 Getestet mit Line 6 Pod Go und Focusrite-Interface. Schwellen bei Bedarf hier anpassen:

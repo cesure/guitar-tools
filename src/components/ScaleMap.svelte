@@ -117,16 +117,16 @@
 
 <div class="card">
   <div class="controls">
-    <div class="wide"><div class="label">{t.root}</div><Seg items={rootNames.map((n, i) => ({ value: i, label: n }))} bind:value={s.root} label={t.root} /></div>
+    <div class="wide"><div class="label">{t.root}</div><Seg cols={6} items={rootNames.map((n, i) => ({ value: i, label: n }))} bind:value={s.root} label={t.root} /></div>
     <div class="wide">
       <div class="label">{t.scale}</div>
       <div class="scale-row">
-        <Seg items={MAIN_SCALES.map((k) => ({ value: k, label: t.names[k] }))} bind:value={s.scale} label={t.scale} />
+        <Seg cols={2} items={MAIN_SCALES.map((k) => ({ value: k, label: t.names[k] }))} bind:value={s.scale} label={t.scale} />
         <button class="more" class:open={showMore} aria-expanded={showMore} onclick={() => (moreOpen = !moreOpen)}>{t.more} {showMore ? '▴' : '▾'}</button>
       </div>
       {#if showMore}
         <div class="more-row">
-          <Seg small items={MORE_SCALES.map((k) => ({ value: k, label: t.names[k] }))} bind:value={s.scale} label={t.more} />
+          <Seg small cols={2} items={MORE_SCALES.map((k) => ({ value: k, label: t.names[k] }))} bind:value={s.scale} label={t.more} />
         </div>
       {/if}
     </div>
@@ -228,8 +228,10 @@
   .btn.small { padding: 6px 14px; font-size: 13px; font-weight: 500; white-space: normal; }
   @media (max-width: 720px) {
     .controls > div { flex-basis: 100%; }
-    .scale-row { flex-wrap: nowrap; }
-    .scale-row :global(.seg) { flex: 1; min-width: 0; }
+    /* Skalen untereinander: Dur | Moll, Dur-Penta | Moll-Penta, Blues über die volle Breite, darunter „Mehr“ */
+    .scale-row { flex-direction: column; }
+    .scale-row :global(.seg.grid > :last-child:nth-child(odd)) { grid-column: 1 / -1; }
+    .more { text-align: center; padding: 8px 12px; }
     .scroll { margin: 0 -18px; padding: 0 18px; }
     .swipe { display: block; }
   }
