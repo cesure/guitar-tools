@@ -1,0 +1,20 @@
+{
+  "name": "guitar-tools",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro check && astro build",
+    "preview": "astro preview",
+    "icons": "node scripts/make-icons.mjs"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.9.12",
+    "@astrojs/svelte": "^9.0.1",
+    "@vite-pwa/astro": "^2.0.4",
+    "astro": "^7.3.8",
+    "svelte": "^5.59.1",
+    "typescript": "^6.0.3"
+  }
+}

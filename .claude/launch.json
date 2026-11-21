@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "astro",
+      "runtimeExecutable": "./dc",
+      "runtimeArgs": ["dev"],
+      "port": 4321
+    },
+    {
+      "name": "astro-preview",
+      "runtimeExecutable": "./dc",
+      "runtimeArgs": ["preview"],
+      "port": 4321
+    },
+    {
+      "name": "mockups",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8123", "--bind", "127.0.0.1"],
+      "port": 8123
+    }
+  ]
+}

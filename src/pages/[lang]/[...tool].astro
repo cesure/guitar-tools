@@ -1,0 +1,127 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import NoteFinder from '../../components/NoteFinder.svelte';
+import Metronome from '../../components/Metronome.svelte';
+import ScaleMap from '../../components/ScaleMap.svelte';
+import ChordChart from '../../components/ChordChart.svelte';
+import { languages, slugs, tools, toolHref, ui, type Lang, type Tool } from '../../i18n/ui';
+
+export function getStaticPaths() {
+  return (Object.keys(languages) as Lang[]).flatMap((lang) =>
+    tools.map((tool) => ({
+      params: { lang, tool: slugs[lang][tool] || undefined },
+      props: { lang, tool },
+    })),
+  );
+}
+
+const { lang, tool } = Astro.props as { lang: Lang; tool: Tool };
+const t = ui[lang];
+const langs = Object.keys(languages) as Lang[];
+const themes = [
+  ['system', t.prefs.auto],
+  ['light', t.prefs.light],
+  ['dark', t.prefs.dark],
+] as const;
+---
+
+<AppLayout lang={lang} tool={tool}>
+  {
+    tool === 'finder' && (
+      <section>
+        <h1>{t.finder.title}</h1>
+        <p class="sub">{t.finder.sub}</p>
+        <NoteFinder client:load t={t.finder} lang={lang} />
+      </section>
+    )
+  }
+  {
+    tool === 'metronome' && (
+      <section>
+        <h1>{t.metronome.title}</h1>
+        <p class="sub">{t.metronome.sub}</p>
+        <Metronome client:load t={t.metronome} />
+      </section>
+    )
+  }
+  {
+    tool === 'tuner' && (
+      <section>
+        <h1>{t.tuner.title}</h1>
+        <p class="sub">{t.tuner.sub}</p>
+        <div class="card tuner">
+          <div class="needle" />
+          <div class="note">A</div>
+          <p class="hint">440,0 Hz</p>
+        </div>
+      </section>
+    )
+  }
+  {
+    tool === 'scales' && (
+      <section>
+        <h1>{t.scales.title}</h1>
+        <p class="sub">{t.scales.sub}</p>
+        <ScaleMap client:load t={t.scales} lang={lang} />
+      </section>
+    )
+  }
+  {
+    tool === 'chords' && (
+      <section>
+        <h1>{t.chords.title}</h1>
+        <p class="sub">{t.chords.sub}</p>
+        <ChordChart client:load t={t.chords} lang={lang} />
+      </section>
+    )
+  }
+  {
+    tool === 'settings' && (
+      <section class="settings">
+        <h1>{t.prefs.title}</h1>
+        <p class="sub">{t.prefs.sub}</p>
+        <div class="card">
+          <div class="field">
+            <span>{t.prefs.theme}</span>
+            <div class="seg" data-theme-switch role="radiogroup" aria-label={t.prefs.theme}>
+              {themes.map(([v, l]) => (
+                <button type="button" role="radio" data-v={v} class={v === 'system' ? 'active' : ''}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+          <p class="note-small">{t.prefs.themeHint}</p>
+          <div class="field">
+            <span>{t.prefs.lang}</span>
+            <div class="seg">
+              {langs.map((l) => (
+                <a href={toolHref(l, 'settings')} hreflang={l} lang={l} class={l === lang ? 'active' : ''}>
+                  {languages[l]}
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <div class="label">{t.prefs.install}</div>
+          <p class="note-small" style="margin:0">{t.prefs.installHint}</p>
+          <div class="label" style="margin-top:20px">{t.prefs.about}</div>
+          <p class="note-small" style="margin:0">
+            {t.prefs.aboutText} <a href="https://github.com/cesure/guitar-tools">github.com/cesure/guitar-tools</a>
+          </p>
+        </div>
+      </section>
+    )
+  }
+</AppLayout>
+
+<style>
+  .tuner { text-align: center; padding: 40px 18px; }
+  .needle { width: 280px; max-width: 100%; height: 140px; margin: 0 auto; border-radius: 280px 280px 0 0; border: 2px solid var(--line); border-bottom: none; position: relative; }
+  .needle::after { content: ''; position: absolute; left: 50%; bottom: 0; width: 2px; height: 120px; background: var(--accent); transform-origin: bottom; }
+  .note { font-size: 80px; font-weight: 600; line-height: 1.1; margin-top: 12px; }
+  .settings { max-width: 640px; }
+  .note-small { color: var(--muted); font-size: 13px; margin: -4px 0 8px; }
+  .settings .field { flex-wrap: wrap; }
+</style>

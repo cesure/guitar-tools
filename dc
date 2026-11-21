@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Führt einen Befehl im Devcontainer-Image aus, ohne VS Code oder devcontainer-CLI.
+#   ./dc npm install
+#   ./dc npm run build
+#   ./dc dev            → Dev-Server auf http://localhost:4321/guitar-tools/
+#   ./dc preview        → fertigen Build (dist/) inkl. Offline-Modus testen, gleiche Adresse
+set -euo pipefail
+cd "$(dirname "$0")"
+IMAGE="mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm"
+WS="/workspaces/guitar-tools"
+
+if [[ "${1:-}" == "dev" || "${1:-}" == "preview" ]]; then
+  exec docker run --rm --init --name "guitar-tools-$1" -p 4321:4321 -e GT_POLL=1 -e ASTRO_TELEMETRY_DISABLED=1 \
+    -v "$PWD:$WS" -w "$WS" -u node "$IMAGE" npm run "$1" -- --host 0.0.0.0
+fi
+
+exec docker run --rm --init -e ASTRO_TELEMETRY_DISABLED=1 -v "$PWD:$WS" -w "$WS" -u node "$IMAGE" "$@"

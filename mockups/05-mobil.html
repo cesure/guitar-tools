@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Entwurf 5 · Mobil</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  :root { --bg: #f2f2f7; --card: #fff; --text: #1c1c1e; --muted: #8e8e93; --line: #e5e5ea; --accent: #5856d6; --accent-soft: #ecebff; --ok: #34c759; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #000; --card: #1c1c1e; --text: #f2f2f7; --muted: #8e8e93; --line: #2c2c2e; --accent: #7d7aff; --accent-soft: #24234a; } }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif; }
+  .app { max-width: 440px; margin: 0 auto; min-height: 100vh; padding: 0 16px 110px; }
+  .top { padding: 54px 4px 14px; display: flex; justify-content: space-between; align-items: flex-end; }
+  .top h1 { font-size: 34px; font-weight: 700; margin: 0; letter-spacing: -.02em; }
+  .top .avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-size: 13px; font-weight: 600; }
+  .card { background: var(--card); border-radius: 20px; padding: 18px; margin-bottom: 14px; }
+  .cap { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; margin: 22px 4px 8px; }
+  .seg { display: flex; background: var(--bg); border-radius: 10px; padding: 2px; overflow-x: auto; scrollbar-width: none; }
+  .seg button { all: unset; cursor: pointer; flex: 1 0 auto; text-align: center; padding: 7px 12px; border-radius: 8px; font-size: 14px; font-weight: 500; white-space: nowrap; }
+  .seg button.active { background: var(--card); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+  .list .item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .list .item:last-child { border-bottom: none; }
+  .list input[type=number] { width: 64px; border: none; background: var(--bg); color: var(--text); border-radius: 8px; padding: 6px; font: inherit; text-align: center; }
+  .switch { appearance: none; width: 50px; height: 30px; border-radius: 99px; background: var(--line); position: relative; cursor: pointer; transition: .2s; }
+  .switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 26px; height: 26px; border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,.2); transition: .2s; }
+  .switch:checked { background: var(--ok); }
+  .switch:checked::after { left: 22px; }
+  .cta { all: unset; cursor: pointer; display: block; text-align: center; background: var(--accent); color: #fff; font-weight: 600; padding: 16px; border-radius: 14px; font-size: 17px; }
+  .cta.playing { background: #ff3b30; }
+
+  .note-card { text-align: center; padding: 30px 18px; }
+  .note-card .n { font-size: 150px; font-weight: 700; line-height: 1; letter-spacing: -.04em; }
+  .pill { display: inline-block; background: var(--accent-soft); color: var(--accent); padding: 6px 14px; border-radius: 99px; font-weight: 600; font-size: 15px; margin-top: 8px; }
+  .progress { height: 6px; background: var(--bg); border-radius: 99px; overflow: hidden; margin-top: 22px; }
+  .progress i { display: block; height: 100%; width: 62%; background: var(--accent); border-radius: 99px; }
+
+  .ring { width: 230px; height: 230px; border-radius: 50%; margin: 10px auto; display: grid; place-items: center; background: conic-gradient(var(--accent) 0 38%, var(--bg) 38% 100%); position: relative; }
+  .ring::before { content: ''; position: absolute; inset: 14px; border-radius: 50%; background: var(--card); }
+  .ring > div { position: relative; text-align: center; }
+  .ring .v { font-size: 72px; font-weight: 700; letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+  .ring small { color: var(--muted); }
+  .stepper { display: flex; justify-content: center; gap: 70px; margin-top: -54px; position: relative; }
+  .stepper button { all: unset; cursor: pointer; width: 46px; height: 46px; border-radius: 50%; background: var(--bg); display: grid; place-items: center; font-size: 24px; color: var(--accent); }
+  .beats { display: flex; justify-content: center; gap: 10px; margin: 30px 0 6px; }
+  .beats i { width: 14px; height: 14px; border-radius: 50%; background: var(--line); transition: .06s; }
+  .beats i.on { background: var(--text); transform: scale(1.25); }
+  .beats i.accent.on { background: var(--accent); }
+  .status { text-align: center; color: var(--muted); font-size: 14px; }
+
+  .fb { --fb-bg: var(--card); --fb-fret: var(--line); --fb-string: var(--muted); --fb-nut: var(--text); --fb-dot: var(--accent-soft); --fb-dot-ink: var(--accent); --fb-root: var(--accent); --fb-root-ink: #fff; --fb-label: var(--muted); --fb-inlay: var(--muted); --fb-radius: 20px; --fb-dot-size: 22px; --fb-row: 28px; padding: 16px 12px 8px; }
+  .fb-scroll { margin: 0 -16px; padding: 0 16px; }
+  select { width: 100%; border: none; background: var(--bg); color: var(--text); font: inherit; padding: 10px; border-radius: 10px; }
+
+  .tabbar { position: fixed; left: 0; right: 0; bottom: 0; background: color-mix(in srgb, var(--card) 85%, transparent); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-top: 1px solid var(--line); padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); }
+  .tabbar .in { max-width: 440px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); }
+  .tabbar button { all: unset; cursor: pointer; text-align: center; font-size: 11px; color: var(--muted); font-weight: 500; }
+  .tabbar button .i { display: block; font-size: 22px; line-height: 1.2; }
+  .tabbar button.active { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="app">
+  <section data-view="trainer">
+    <div class="top"><h1>Tonfinder</h1><div class="avatar">DE</div></div>
+    <div class="card note-card">
+      <div class="n" data-t="note">G</div>
+      <div class="pill">auf der <span data-t="string">E-Saite</span></div>
+      <div class="progress"><i></i></div>
+    </div>
+    <button class="cta" data-t="next">Nächster Ton</button>
+    <div class="cap">Einstellungen</div>
+    <div class="card list">
+      <div class="item"><span>Saiten</span><span style="color:var(--muted)">Alle ›</span></div>
+      <div class="item"><span>Mit Vorzeichen</span><input type="checkbox" class="switch"></div>
+      <div class="item"><span>Zeitlimit</span><span style="color:var(--muted)">5 s ›</span></div>
+      <div class="item"><span>Ton abspielen</span><input type="checkbox" class="switch" checked></div>
+    </div>
+  </section>
+
+  <section data-view="metro" hidden>
+    <div class="top"><h1>Metronom</h1><div class="avatar">DE</div></div>
+    <div class="card">
+      <div class="ring"><div><div class="v" data-m="bpm">96</div><small>BPM</small></div></div>
+      <div class="stepper"><button data-m="minus">−</button><button data-m="plus">+</button></div>
+      <div class="beats" data-m="dots"></div>
+      <div class="status" data-m="status">Bereit</div>
+    </div>
+    <button class="cta" data-m="toggle" data-off="Start" data-on="Stopp">Start</button>
+    <div class="cap">Takt</div>
+    <div class="card"><div class="seg" data-m="meter"></div><div style="height:10px"></div><div class="seg" data-m="sub"></div></div>
+    <div class="cap">Steigerung</div>
+    <div class="card list">
+      <div class="item"><span>Tempo steigern</span><input type="checkbox" class="switch" data-m="ramp" checked></div>
+      <div class="item"><span>um BPM</span><input type="number" value="5" data-m="ramp-step"></div>
+      <div class="item"><span>alle … Takte</span><input type="number" value="4" data-m="ramp-every"></div>
+      <div class="item"><span>bis BPM</span><input type="number" value="140" data-m="ramp-target"></div>
+    </div>
+  </section>
+
+  <section data-view="scales" hidden>
+    <div class="top"><h1>Skalen</h1><div class="avatar">DE</div></div>
+    <div class="card">
+      <div class="list">
+        <div class="item"><span>Grundton</span><select data-s="root" style="width:auto"></select></div>
+        <div class="item"><span>Skala</span><select data-s="scale" style="width:auto"></select></div>
+      </div>
+      <div style="height:8px"></div>
+      <div class="seg" data-s="shape"></div>
+      <div style="height:8px"></div>
+      <div class="seg" data-s="labels"></div>
+    </div>
+    <div class="fb-scroll"><div data-s="board"></div></div>
+    <div class="status" style="margin-top:8px">← wischen für mehr Bünde →</div>
+  </section>
+
+  <section data-view="tuner" hidden>
+    <div class="top"><h1>Stimmen</h1><div class="avatar">DE</div></div>
+    <div class="card" style="text-align:center;padding:40px 18px">
+      <div class="ring" style="background:conic-gradient(var(--ok) 0 50%, var(--bg) 50% 100%)"><div><div class="v">E</div><small>82,4 Hz</small></div></div>
+      <p class="status">Kommt bald – braucht Mikrofon.</p>
+    </div>
+  </section>
+</div>
+
+<nav class="tabbar"><div class="in">
+  <button data-tab="trainer" class="active"><span class="i">◎</span>Tonfinder</button>
+  <button data-tab="metro"><span class="i">◷</span>Metronom</button>
+  <button data-tab="scales"><span class="i">▦</span>Skalen</button>
+  <button data-tab="tuner"><span class="i">∿</span>Stimmen</button>
+</div></nav>
+<script src="shared.js"></script>
+<script>GT.init()</script>
+</body>
+</html>

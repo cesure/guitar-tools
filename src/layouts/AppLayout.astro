@@ -1,0 +1,113 @@
+---
+import '../styles/global.css';
+import { pwaInfo } from 'virtual:pwa-info';
+import { languages, navGroups, toolHref, ui, type Lang, type Tool } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+  tool: Tool;
+}
+const { lang, tool } = Astro.props;
+const t = ui[lang];
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+const icons: Record<Tool, string> = { finder: '◎', metronome: '◷', tuner: '∿', scales: '▦', chords: '▤', settings: '⚙' };
+const langs = Object.keys(languages) as Lang[];
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{t.nav[tool]} · Guitar Tools</title>
+    <meta name="description" content={t.meta.description} />
+    <link rel="icon" href={`${base}favicon.svg`} type="image/svg+xml" />
+    <link rel="apple-touch-icon" href={`${base}icons/apple-touch-icon.png`} />
+    <meta name="theme-color" content="#f4f2ee" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#121214" media="(prefers-color-scheme: dark)" />
+    {langs.map((l) => <link rel="alternate" hreflang={l} href={new URL(toolHref(l, tool), Astro.site)} />)}
+    {pwaInfo && <Fragment set:html={pwaInfo.webManifest.linkTag} />}
+    <script is:inline>
+      try {
+        var saved = localStorage.getItem('gt-theme');
+        if (saved) document.documentElement.dataset.theme = saved;
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <a class="brand" href={toolHref(lang, 'finder')}><img src={`${base}favicon.svg`} alt="" /> Guitar Tools</a>
+      {
+        navGroups.map((g) => (
+          <nav aria-label={t.nav[g.id]}>
+            <div class="nav-group">{t.nav[g.id]}</div>
+            {g.tools.map((id) => (
+              <a href={toolHref(lang, id)} aria-current={id === tool ? 'page' : undefined}>
+                <span class="ic" aria-hidden="true">{icons[id]}</span> {t.nav[id]}
+                {id === 'tuner' && <span class="soon">{t.nav.soon}</span>}
+              </a>
+            ))}
+          </nav>
+        ))
+      }
+      <nav class="nav-bottom" aria-label={t.nav.settings}>
+        <a href={toolHref(lang, 'settings')} aria-current={tool === 'settings' ? 'page' : undefined}>
+          <span class="ic" aria-hidden="true">{icons.settings}</span> {t.nav.settings}
+        </a>
+      </nav>
+    </aside>
+
+    <header class="mobile-top">
+      <a class="brand" href={toolHref(lang, 'finder')}><img src={`${base}favicon.svg`} alt="" /> <span>Guitar Tools</span></a>
+      <a class="gear" href={toolHref(lang, 'settings')} aria-label={t.nav.settings} aria-current={tool === 'settings' ? 'page' : undefined}>⚙</a>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <nav class="tabbar" aria-label="Guitar Tools">
+      {
+        navGroups.map((g, gi) =>
+          g.tools.map((id, i) => (
+            <a href={toolHref(lang, id)} aria-current={id === tool ? 'page' : undefined} class={gi > 0 && i === 0 ? 'group-start' : ''}>
+              <span class="ic" aria-hidden="true">{icons[id]}</span>
+              {t.navShort[id]}
+            </a>
+          )),
+        )
+      }
+    </nav>
+
+    <script>
+      import { registerSW } from 'virtual:pwa-register';
+
+      // Darstellung: Automatisch / Hell / Dunkel (Knöpfe auf der Einstellungsseite)
+      const root = document.documentElement;
+      let current = root.dataset.theme || 'system';
+      const render = () =>
+        document.querySelectorAll<HTMLButtonElement>('[data-theme-switch] button').forEach((b) => {
+          b.classList.toggle('active', b.dataset.v === current);
+          b.setAttribute('aria-checked', String(b.dataset.v === current));
+        });
+      document.addEventListener('click', (e) => {
+        const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-theme-switch] button');
+        if (!b) return;
+        current = b.dataset.v ?? 'system';
+        if (current === 'system') delete root.dataset.theme;
+        else root.dataset.theme = current;
+        try {
+          if (current === 'system') localStorage.removeItem('gt-theme');
+          else localStorage.setItem('gt-theme', current);
+        } catch {
+          /* ohne Speichern weiter */
+        }
+        render();
+      });
+      render();
+
+      // Offline-Modus (PWA)
+      registerSW({ immediate: true });
+    </script>
+  </body>
+</html>

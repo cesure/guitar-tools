@@ -1,0 +1,66 @@
+/* Griffbrett-Basis. Jeder Entwurf überschreibt nur die --fb-* Variablen. */
+.fb {
+  --fb-bg: #1d1d1f;
+  --fb-string: #8a8a8a;
+  --fb-fret: #3a3a3c;
+  --fb-nut: #d8d2c4;
+  --fb-dot: #e8e8e8;
+  --fb-dot-ink: #111;
+  --fb-root: #f5a623;
+  --fb-root-ink: #111;
+  --fb-dim: 0.15;
+  --fb-label: #777;
+  --fb-inlay: #aaa;
+  --fb-radius: 10px;
+  --fb-dot-size: 24px;
+  --fb-row: 30px;
+  display: grid;
+  grid-template-columns: 36px repeat(var(--frets), minmax(36px, 1fr));
+  min-width: 660px;
+  background: var(--fb-bg);
+  border-radius: var(--fb-radius);
+  padding: 14px 12px 6px;
+  box-sizing: border-box;
+}
+.fb-scroll { overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch; }
+.fb-cell {
+  height: var(--fb-row);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  border-right: 2px solid var(--fb-fret);
+  box-sizing: border-box;
+}
+.fb-cell::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  height: var(--sw, 1px);
+  background: var(--fb-string);
+  transform: translateY(-50%);
+}
+.fb-cell.f0 { border-right: 5px solid var(--fb-nut); }
+.fb-cell.f0::before { opacity: .5; }
+.fb-cell.lbl { border-right: none; height: auto; padding-top: 6px; flex-direction: column; gap: 2px; font-size: 11px; color: var(--fb-label); font-variant-numeric: tabular-nums; }
+.fb-cell.lbl::before { display: none; }
+.fb-cell.lbl.inlay::after { content: '●'; color: var(--fb-inlay); font-size: 7px; line-height: 1; }
+.fb-cell.lbl.dbl::after { content: '● ●'; }
+.m {
+  position: relative;
+  z-index: 1;
+  width: var(--fb-dot-size);
+  height: var(--fb-dot-size);
+  border-radius: 50%;
+  background: var(--fb-dot);
+  color: var(--fb-dot-ink);
+  font-size: 10.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity .2s, transform .2s;
+}
+.m.root { background: var(--fb-root); color: var(--fb-root-ink); }
+.m.dim { opacity: var(--fb-dim); }
+[hidden] { display: none !important; }

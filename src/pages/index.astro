@@ -1,0 +1,25 @@
+---
+/* Einstieg: leitet je nach Browsersprache auf /de/ oder /en/ weiter. */
+import { defaultLang, languages, toolHref, type Lang } from '../i18n/ui';
+const langs = Object.keys(languages) as Lang[];
+const targets = Object.fromEntries(langs.map((l) => [l, toolHref(l, 'finder')]));
+const fallback = toolHref(defaultLang, 'finder');
+---
+
+<!doctype html>
+<html lang={defaultLang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Guitar Tools</title>
+    <meta http-equiv="refresh" content={`1; url=${fallback}`} />
+    <script is:inline define:vars={{ targets, fallback }}>
+      var pref = (navigator.languages || [navigator.language]).map(function (l) { return l.slice(0, 2); });
+      var hit = pref.find(function (l) { return targets[l]; });
+      location.replace(hit ? targets[hit] : fallback);
+    </script>
+  </head>
+  <body>
+    {langs.map((l) => <p><a href={targets[l]}>{languages[l]}</a></p>)}
+  </body>
+</html>
