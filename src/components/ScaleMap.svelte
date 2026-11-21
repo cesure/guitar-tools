@@ -107,10 +107,14 @@
 
   <div class="scroll">
     <div class="fb" style:--frets={FRETS} role="img" aria-label={`${rootNames[s.root]} ${t.names[s.scale]}`}>
-      {#each strings as si}
+      {#each strings as si, row}
         {#each Array(FRETS + 1) as _, f}
           {@const c = cell(si, f)}
-          <div class="cell f{f}" style:--sw="{(0.8 + (5 - si) * 0.4).toFixed(1)}px">
+          <div
+            class="cell f{f}"
+            class:inl={([3, 5, 7, 9, 15].includes(f) && row === 2) || (f === 12 && (row === 1 || row === 3))}
+            style:--sw="{(0.8 + (5 - si) * 0.4).toFixed(1)}px"
+          >
             {#if c}<span class="m" class:root={c.root} class:char={c.char} class:dim={c.dim}>{c.text}</span>{/if}
           </div>
         {/each}
@@ -160,6 +164,10 @@
   .cell::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: var(--sw, 1px); background: var(--fb-string); transform: translateY(-50%); }
   .cell.f0 { border-right: 5px solid var(--fb-nut); }
   .cell.f0::before { opacity: 0.5; }
+  /* Griffbrett-Einlagen wie auf der echten Gitarre, 12. Bund doppelt und hervorgehoben */
+  .cell.inl::after { content: ''; position: absolute; left: 50%; bottom: -5px; width: 10px; height: 10px; border-radius: 50%; background: var(--fb-inlay); opacity: 0.6; transform: translateX(-50%); }
+  .cell.f12:not(.lbl) { background: color-mix(in srgb, var(--fb-inlay) 16%, transparent); border-right-width: 3px; }
+  .cell.lbl.f12 span { font-weight: 700; color: var(--text); font-size: 12px; }
   .cell.lbl { border-right: none; height: auto; padding-top: 6px; flex-direction: column; gap: 2px; font-size: 11px; color: var(--fb-label); font-variant-numeric: tabular-nums; }
   .cell.lbl::before { display: none; }
   .cell.lbl.inlay::after { content: '●'; color: var(--fb-inlay); font-size: 7px; line-height: 1; }
