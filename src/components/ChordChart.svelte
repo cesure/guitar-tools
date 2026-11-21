@@ -3,7 +3,7 @@
   import Seg from './Seg.svelte';
   import ChordDiagram from './ChordDiagram.svelte';
   import { pluck } from '../lib/audio';
-  import { load, save } from '../lib/storage';
+  import { load, oneOf, save } from '../lib/storage';
   import {
     FINDER_QUALITIES, ROOT_NAMES, TUNING, chordPitchClasses, chordVoicings, midiToFreq, spelling,
     type Chord, type ChordQuality, type Voicing,
@@ -12,7 +12,7 @@
 
   let { t, lang }: { t: Messages['chords']; lang: Lang } = $props();
 
-  const s = $state(load('gt-chords', { labels: 'fingers' as 'fingers' | 'notes' }));
+  const s = $state(load('gt-chords', { labels: 'fingers' as 'fingers' | 'notes' }, (v) => ({ labels: oneOf(v.labels, ['fingers', 'notes'] as const, 'fingers') })));
   $effect(() => save('gt-chords', s));
 
   /* ---------- Akkord-Finder (Auswahl steht in der URL) ---------- */

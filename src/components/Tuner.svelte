@@ -1,22 +1,31 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
   import { pluck } from '../lib/audio';
-  import { load, save } from '../lib/storage';
+  import { clampInt, load, oneOf, save } from '../lib/storage';
+  import Seg from './Seg.svelte';
   import MicPanel from './MicPanel.svelte';
   import { PitchListener, type Pitch } from '../lib/pitch';
-  import { NOTE_NAMES, STRING_LABELS, TUNING, midiToFreq } from '../lib/music';
+  import { NOTE_NAMES, TUNINGS, TUNING_IDS, midiToFreq, stringLabels, type TuningId } from '../lib/music';
   import type { Lang, Messages } from '../i18n/ui';
 
   let { t, mic, lang, settingsHref }: { t: Messages['tuner']; mic: Messages['mic']; lang: Lang; settingsHref: string } = $props();
 
-  const s = $state(load('gt-tuner', { a4: 440 }));
+  const s = $state(
+    load('gt-tuner', { a4: 440, tuning: 'standard' as TuningId }, (v) => ({
+      a4: clampInt(v.a4, 430, 450, 440),
+      tuning: oneOf(v.tuning, TUNING_IDS, 'standard'),
+    })),
+  );
+  const a4 = $derived(Math.min(450, Math.max(430, s.a4 || 440)));
+  const tuning = $derived<readonly number[]>(TUNINGS[s.tuning] ?? TUNINGS.standard);
+  const labels = $derived(stringLabels(lang, TUNINGS[s.tuning] ? s.tuning : 'standard'));
   $effect(() => save('gt-tuner', s));
 
   let pitch = $state<Pitch | null>(null);
   let running = $state(false);
   const listener = new PitchListener((p) => (pitch = p));
   $effect(() => {
-    listener.a4 = Math.min(450, Math.max(430, s.a4 || 440));
+    listener.a4 = a4;
   });
 
   $effect(() => {
@@ -27,14 +36,14 @@
   const names = $derived(NOTE_NAMES[lang]);
   const cents = $derived(pitch?.cents ?? 0);
   const inTune = $derived(pitch !== null && Math.abs(cents) <= 5);
-  // Nächste Gitarrensaite zum erkannten Ton
+  // Nächste Saite der gewählten Stimmung zum erkannten Ton
   const nearString = $derived(
-    pitch ? TUNING.reduce((best, m, i) => (Math.abs(m - pitch!.midi) < Math.abs(TUNING[best] - pitch!.midi) ? i : best), 0) : -1,
+    pitch ? tuning.reduce((best, m, i) => (Math.abs(m - pitch!.midi) < Math.abs(tuning[best] - pitch!.midi) ? i : best), 0) : -1,
   );
   const status = $derived(!pitch ? t.play : inTune ? t.inTune : cents < 0 ? t.flat : t.sharp);
 
   function reference(i: number) {
-    pluck(midiToFreq(TUNING[i]) * (s.a4 / 440), 2.5, 0.4);
+    pluck(midiToFreq(tuning[i]) * (a4 / 440), 2.5, 0.4);
   }
 </script>
 
@@ -67,11 +76,13 @@
 </div>
 
 <div class="card" style="margin-top:16px">
-  <div class="label">{t.strings}</div>
+  <div class="label">{t.tuning}</div>
+  <Seg small items={TUNING_IDS.map((v) => ({ value: v, label: t.tunings[v] }))} bind:value={s.tuning} label={t.tuning} />
+  <div class="label" style="margin-top:16px">{t.strings}</div>
   <div class="strings">
-    {#each STRING_LABELS[lang] as label, i}
-      <button class="string" class:near={i === nearString} class:ok={i === nearString && inTune && pitch?.midi === TUNING[i]} onclick={() => reference(i)}>
-        <strong>{label}</strong><span>{midiToFreq(TUNING[i]).toFixed(1)}</span>
+    {#each labels as label, i}
+      <button class="string" class:near={i === nearString} class:ok={i === nearString && inTune && pitch?.midi === tuning[i]} onclick={() => reference(i)}>
+        <strong>{label}</strong><span>{(midiToFreq(tuning[i]) * (a4 / 440)).toFixed(1)}</span>
       </button>
     {/each}
   </div>

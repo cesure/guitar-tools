@@ -4,8 +4,8 @@
    * Eingang und Kanal werden in den Einstellungen gewählt (gespeichert unter „gt-mic“).
    */
   import { onDestroy, onMount } from 'svelte';
-  import { load, save } from '../lib/storage';
-  import { GATE, PitchListener, type MicError } from '../lib/pitch';
+  import { save } from '../lib/storage';
+  import { GATE, PitchListener, loadMicSettings, type MicError } from '../lib/pitch';
   import type { Messages } from '../i18n/ui';
 
   interface Props {
@@ -54,7 +54,7 @@
 
   async function start() {
     // Immer frisch lesen – die Einstellungen können sich auf der Einstellungsseite geändert haben
-    const cfg = load('gt-mic', { deviceId: '', channel: 1, channels: 2 });
+    const cfg = loadMicSettings();
     channel = cfg.channel >= 1 ? cfg.channel : 1;
     listener.deviceId = cfg.deviceId;
     listener.channel = channel;
@@ -80,7 +80,7 @@
     listener.channel = ch;
     suggest = 0;
     suggestSince = 0;
-    const cfg = load('gt-mic', { deviceId: '', channel: 1, channels: 2 });
+    const cfg = loadMicSettings();
     save('gt-mic', { ...cfg, channel: ch });
   }
 </script>

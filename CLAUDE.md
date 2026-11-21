@@ -27,6 +27,14 @@ Skalen, Akkord-Finder. Live: https://cesure.github.io/guitar-tools/
   leiten weiter.
 - Komponenten: `src/components` (Metronome, Tuner, NoteFinder, ScaleMap, ChordChart, MicPanel,
   AudioSettings, Seg …). Logik: `src/lib` (music.ts, metronome.ts, pitch.ts + yin.ts, audio.ts, storage.ts).
+- Seitenwechsel ohne Neuladen (Astro `ClientRouter` in `AppLayout.astro`). Das Metronom lebt deshalb als
+  gemeinsamer Zustand in `src/lib/metronome-store.svelte.ts` und läuft auf anderen Seiten weiter
+  (kleine Leiste `MiniMetronome.svelte`). Seiten-Komponenten werden beim Wechsel abgebaut → Mikrofon in
+  `onDestroy` stoppen. Theme wird nach jedem Wechsel neu gesetzt (`astro:after-swap`).
+- Gespeicherte Einstellungen immer über `load(key, defaults, check)` aus `src/lib/storage.ts` lesen:
+  Typen werden gegen die Standardwerte geprüft, `check` begrenzt Werte – alte oder kaputte Daten dürfen
+  nichts zum Absturz bringen. Werte, die gleich beim Laden sichtbar sind, bis `onMount` ausblenden,
+  sonst blitzt der Standardwert aus dem statischen HTML auf.
 - Einstellungen im localStorage (`gt-theme`, `gt-lang`, `gt-metronome`, `gt-finder`, `gt-chords`,
   `gt-tuner`); Skalen-/Akkordwahl steht in der URL (teilbar).
 - Layout: ab 720px Seitenleiste, darunter Tab-Leiste unten. Helles/dunkles Theme über CSS-Variablen.

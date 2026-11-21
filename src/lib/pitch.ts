@@ -1,4 +1,5 @@
 import { freqToPitch, yin, type Pitch } from './yin';
+import { clampInt, load } from './storage';
 
 export type { Pitch };
 
@@ -18,6 +19,14 @@ export interface InputDevice {
   id: string;
   label: string;
 }
+
+/** Gespeicherte Eingangswahl (Einstellungsseite), geprüft */
+export const loadMicSettings = () =>
+  load('gt-mic', { deviceId: '', channel: 1, channels: 2 }, (v) => ({
+    ...v,
+    channel: clampInt(v.channel, 1, 32, 1),
+    channels: clampInt(v.channels, 1, 32, 2),
+  }));
 
 /** Unterhalb dieses Pegels (RMS) gilt das Signal als Stille. ≈ −56 dBFS */
 export const GATE = 0.0015;

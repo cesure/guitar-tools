@@ -1,15 +1,14 @@
 <script lang="ts">
   /** Einstellungsseite: Audio-Eingang (Mikrofon, Focusrite, Pod Go …) wählen und testen. */
   import { onDestroy, onMount } from 'svelte';
-  import { load, save } from '../lib/storage';
-  import { GATE, PitchListener, type InputDevice, type MicError, type Pitch } from '../lib/pitch';
+  import { save } from '../lib/storage';
+  import { GATE, PitchListener, loadMicSettings, type InputDevice, type MicError, type Pitch } from '../lib/pitch';
   import { NOTE_NAMES } from '../lib/music';
   import type { Lang, Messages } from '../i18n/ui';
 
   let { t, lang }: { t: Messages['mic']; lang: Lang } = $props();
 
-  const s = $state(load('gt-mic', { deviceId: '', channel: 1, channels: 2 }));
-  if (!(s.channel >= 1)) s.channel = 1;
+  const s = $state(loadMicSettings());
   $effect(() => save('gt-mic', s));
 
   let pitch = $state<Pitch | null>(null);

@@ -4,7 +4,7 @@
   import Seg from './Seg.svelte';
   import MicPanel from './MicPanel.svelte';
   import { audio, pluck } from '../lib/audio';
-  import { load, save } from '../lib/storage';
+  import { load, oneOf, save } from '../lib/storage';
   import { PitchListener, type Pitch } from '../lib/pitch';
   import { NATURALS, NOTE_NAMES, STRING_LABELS, TUNING, midiToFreq } from '../lib/music';
   import type { Lang, Messages } from '../i18n/ui';
@@ -21,7 +21,13 @@
       length: 10,
       breather: 'normal' as 'short' | 'normal' | 'key',
       successSound: true,
-    }),
+    }, (v) => ({
+      ...v,
+      mode: oneOf(v.mode, ['one', 'all'] as const, 'one'),
+      length: oneOf(v.length, [5, 10, 20, 0], 10),
+      breather: oneOf(v.breather, ['short', 'normal', 'key'] as const, 'normal'),
+      strings: v.strings.map(Boolean),
+    })),
   );
   $effect(() => save('gt-finder', settings));
 

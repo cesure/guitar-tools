@@ -5,7 +5,7 @@ export const NOTE_NAMES: Record<Lang, string[]> = {
   de: ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'H'],
   en: ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'],
 };
-const FLAT_NAMES: Record<Lang, string[]> = {
+export const FLAT_NAMES: Record<Lang, string[]> = {
   de: ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'G♭', 'G', 'A♭', 'A', 'B', 'H'],
   en: ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'G♭', 'G', 'A♭', 'A', 'B♭', 'B'],
 };
@@ -77,6 +77,28 @@ export const STRING_LABELS: Record<Lang, string[]> = {
   de: ['E', 'A', 'D', 'G', 'H', 'e'],
   en: ['E', 'A', 'D', 'G', 'B', 'e'],
 };
+
+/** Stimmungen fürs Stimmgerät (tiefe → hohe Saite, MIDI). */
+export const TUNINGS = {
+  standard: [40, 45, 50, 55, 59, 64],
+  'drop-d': [38, 45, 50, 55, 59, 64],
+  'half-down': [39, 44, 49, 54, 58, 63],
+  'open-g': [38, 43, 50, 55, 59, 62],
+  'open-d': [38, 45, 50, 54, 57, 62],
+  dadgad: [38, 45, 50, 55, 57, 62],
+} as const satisfies Record<string, readonly number[]>;
+export type TuningId = keyof typeof TUNINGS;
+export const TUNING_IDS = Object.keys(TUNINGS) as TuningId[];
+
+/** Saitennamen einer Stimmung, die höchste Saite klein (E A D G H e). */
+export function stringLabels(lang: Lang, id: TuningId): string[] {
+  const names = id === 'half-down' ? FLAT_NAMES[lang] : NOTE_NAMES[lang];
+  const tuning = TUNINGS[id];
+  return tuning.map((m, i) => {
+    const n = names[m % 12];
+    return i === tuning.length - 1 ? n.toLowerCase() : n;
+  });
+}
 
 export const midiToFreq = (midi: number) => 440 * 2 ** ((midi - 69) / 12);
 
