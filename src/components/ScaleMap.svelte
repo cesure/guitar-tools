@@ -53,24 +53,37 @@
     ...shapes.map((_, i) => ({ value: i + 1, label: String(i + 1) })),
   ]);
 
-  // CAGED-Erklärung nur bei Dur-Skalen – bei Moll beziehen sich die Buchstaben auf die Dur-Parallele (verwirrend)
-  const cagedHint = $derived(
-    s.shape && win && TO_MAJOR[s.scale] === 0
-      ? (fretOfRootOnShapeString(win.name) === 0 ? t.cagedHintOpen : t.cagedHint)
+  /*
+   * Benennung der Lage nach dem offenen Akkordgriff, der darin steckt:
+   * Dur-Skalen → Dur-Griff des Grundtons (C, A, G, E, D),
+   * Moll-Skalen → Moll-Griff des Grundtons (die CAGED-Fenster der Dur-Parallele enthalten Am, Gm, Em, Dm, Cm),
+   * Modi (Dorisch, Mixolydisch) → Buchstabe bezogen auf die Dur-Tonleiter mit denselben Tönen.
+   */
+  const MINOR_OF: Record<string, string> = { C: 'Am', A: 'Gm', G: 'Em', E: 'Dm', D: 'Cm' };
+  const OPEN_ROOT: Record<string, number> = { C: 0, A: 9, G: 7, E: 4, D: 2, Am: 9, Gm: 7, Em: 4, Dm: 2, Cm: 0 };
+  const kind = $derived(TO_MAJOR[s.scale] === 0 ? 'major' : TO_MAJOR[s.scale] === 3 ? 'minor' : 'mode');
+  const shapeName = $derived(win ? (kind === 'minor' ? MINOR_OF[win.name] : win.name) : '');
+  const shapeTitle = $derived(
+    win
+      ? t.shapeTitle
           .replace('{n}', String(s.shape))
-          .replace('{shape}', win.name)
-          .replace('{fret}', String(fretOfRootOnShapeString(win.name)))
-          .replace('{root}', rootNames[s.root])
-      : null,
+          .replace('{shape}', shapeName)
+          .replace('{from}', String(win.from))
+          .replace('{to}', String(win.to))
+      : '',
   );
-  /** Bund, in dem der verschobene offene Griff als Barré liegt (Grundton auf der Saite, nach der die Form heißt) */
-  function fretOfRootOnShapeString(name: string) {
-    const string = { E: 0, A: 1, D: 2, G: 0, C: 1 }[name] ?? 0; // G- und C-Form: Grundton auf tiefer E- bzw. A-Saite
-    const open = { E: 4, A: 9, D: 2, G: 7, C: 0 }[name] ?? 0; // Grundton des offenen Griffs
-    const rootFret = (s.root - (TUNING[string] % 12) + 12) % 12;
-    const openFret = (open - (TUNING[string] % 12) + 12) % 12;
-    return (rootFret - openFret + 12) % 12;
-  }
+  const cagedHint = $derived.by(() => {
+    if (!win) return null;
+    if (kind === 'mode') {
+      const majorRoot = (s.root + TO_MAJOR[s.scale]) % 12;
+      return t.cagedHintMode.replace('{shape}', win.name).replace('{major}', rootNames[majorRoot]);
+    }
+    const fret = (s.root - OPEN_ROOT[shapeName] + 12) % 12; // so weit ist der offene Griff verschoben
+    const tpl = kind === 'major'
+      ? (fret === 0 ? t.cagedHintOpen : t.cagedHint)
+      : (fret === 0 ? t.cagedHintOpenMinor : t.cagedHintMinor);
+    return tpl.replace('{shape}', shapeName).replace('{fret}', String(fret)).replace('{root}', rootNames[s.root]);
+  });
 
   function cell(stringIndex: number, fret: number) {
     const pc = (TUNING[stringIndex] + fret) % 12;
@@ -123,6 +136,8 @@
       <Seg items={[{ value: 'note', label: t.notes }, { value: 'iv', label: t.intervals }]} bind:value={s.labels} label={t.labels} />
     </div>
   </div>
+
+  {#if win}<div class="shape-title">{shapeTitle}</div>{/if}
 
   <div class="scroll">
     <div class="fb" style:--frets={FRETS} role="img" aria-label={`${rootNames[s.root]} ${t.names[s.scale]}`}>
@@ -208,6 +223,7 @@
   .legend i.dim { opacity: 0.25; }
   .info { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
   .info p { margin: 0 0 12px; }
+  .shape-title { font-weight: 600; margin: -6px 0 10px; }
   .info p.caged { color: var(--muted); font-size: 14px; margin-top: -4px; }
   .btn.small { padding: 6px 14px; font-size: 13px; font-weight: 500; white-space: normal; }
   @media (max-width: 720px) {
