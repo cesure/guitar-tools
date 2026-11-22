@@ -228,7 +228,7 @@
   .btn.small { padding: 6px 14px; font-size: 13px; font-weight: 500; white-space: normal; }
   @media (max-width: 720px) {
     .controls > div { flex-basis: 100%; }
-    /* Skalen untereinander: Dur | Moll, Dur-Penta | Moll-Penta, Blues über die volle Breite, darunter „Mehr“ */
+    /* Skalen paarweise: Dur | Moll, Dur-Penta | Moll-Penta, Dur-Blues | Moll-Blues, darunter „Mehr“ */
     .scale-row { flex-direction: column; }
     .scale-row :global(.seg.grid > :last-child:nth-child(odd)) { grid-column: 1 / -1; }
     .more { text-align: center; padding: 8px 12px; }

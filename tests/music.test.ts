@@ -91,7 +91,10 @@ test('Vorzeichen passend zur Tonart', () => {
   assert.equal(spelling('en', 7, 'major')[6], 'F♯'); // G-Dur: F♯
   assert.equal(spelling('en', 2, 'minor')[10], 'B♭'); // D-Moll: B♭
   assert.equal(spelling('en', 4, 'major')[1], 'C♯'); // E-Dur: C♯
-  assert.equal(spelling('en', 9, 'blues')[3], 'E♭'); // A-Blues: Blue Note E♭
+  assert.equal(spelling('en', 9, 'blues')[3], 'E♭'); // A-Moll-Blues: Blue Note E♭
+  assert.equal(spelling('en', 0, 'major-blues')[3], 'E♭'); // C-Dur-Blues: Blue Note E♭
+  assert.equal(spelling('de', 7, 'major-blues')[10], 'B'); // G-Dur-Blues: B (= B♭)
+  assert.equal(spelling('en', 7, 'major-blues')[11], 'B'); // … und die große Terz H/B bleibt
   // Jede Skala: kein Stammton doppelt (z. B. nicht A und A♯ in derselben Tonleiter).
   // Ausnahme Fis-/Ges-Dur (6 Vorzeichen): E♯ bzw. C♭ gibt es in der Namenstabelle nicht.
   const TO_MAJ: Record<string, number> = { major: 0, minor: 3, dorian: 10, mixolydian: 5 };

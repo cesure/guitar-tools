@@ -24,6 +24,7 @@ export const SCALES = {
   'minor-penta': [0, 3, 5, 7, 10],
   'major-penta': [0, 2, 4, 7, 9],
   blues: [0, 3, 5, 6, 7, 10],
+  'major-blues': [0, 2, 3, 4, 7, 9],
   major: [0, 2, 4, 5, 7, 9, 11],
   minor: [0, 2, 3, 5, 7, 8, 10],
   'harmonic-minor': [0, 2, 3, 5, 7, 8, 11],
@@ -34,18 +35,19 @@ export const SCALES = {
 export type ScaleId = keyof typeof SCALES;
 
 /** Reihenfolge: Grundlagen zuerst, Paare (Dur/Moll) nebeneinander. */
-export const MAIN_SCALES: ScaleId[] = ['major', 'minor', 'major-penta', 'minor-penta', 'blues'];
+export const MAIN_SCALES: ScaleId[] = ['major', 'minor', 'major-penta', 'minor-penta', 'major-blues', 'blues'];
 export const MORE_SCALES: ScaleId[] = ['harmonic-minor', 'melodic-minor', 'dorian', 'mixolydian'];
 
 /** Halbtöne vom Grundton der Skala zum Grundton der zugehörigen Dur-Tonart (A-Moll → C-Dur = +3). */
 export const TO_MAJOR: Record<ScaleId, number> = {
-  'minor-penta': 3, 'major-penta': 0, blues: 3, major: 0, minor: 3,
+  'minor-penta': 3, 'major-penta': 0, blues: 3, 'major-blues': 0, major: 0, minor: 3,
   'harmonic-minor': 3, 'melodic-minor': 3, dorian: 10, mixolydian: 5,
 };
 
 /** Töne, die den Klang der Skala ausmachen – werden extra eingefärbt. */
 export const CHARACTERISTIC: Partial<Record<ScaleId, number[]>> = {
   blues: [6],
+  'major-blues': [3],
   'harmonic-minor': [11],
   'melodic-minor': [9, 11],
   dorian: [9],
@@ -58,14 +60,17 @@ export const PARALLEL: Partial<Record<ScaleId, { scale: ScaleId; shift: number }
   'major-penta': { scale: 'minor-penta', shift: 9 },
   minor: { scale: 'major', shift: 3 },
   major: { scale: 'minor', shift: 9 },
+  blues: { scale: 'major-blues', shift: 3 },
+  'major-blues': { scale: 'blues', shift: 9 },
 };
 
 /** Tonnamen passend zur Tonart: b-Tonarten (F, B, Es, As, Des und ihre Verwandten) mit ♭, sonst ♯. */
 export function spelling(lang: Lang, root: number, scale: ScaleId): string[] {
   const majorKey = (root + TO_MAJOR[scale]) % 12;
   const names = [...([5, 10, 3, 8, 1].includes(majorKey) ? FLAT_NAMES[lang] : NOTE_NAMES[lang])];
-  // Die Blue Note ist eine erniedrigte Quinte → immer mit ♭ schreiben (A-Blues: E♭)
+  // Blue Notes sind erniedrigte Töne → immer mit ♭ schreiben (A-Moll-Blues: E♭, C-Dur-Blues: E♭)
   if (scale === 'blues') names[(root + 6) % 12] = FLAT_NAMES[lang][(root + 6) % 12];
+  if (scale === 'major-blues') names[(root + 3) % 12] = FLAT_NAMES[lang][(root + 3) % 12];
   return names;
 }
 
