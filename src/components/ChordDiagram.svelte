@@ -12,6 +12,12 @@
   const fy = (f: number) => TOP + (f - baseFret + 0.5) * FRET_H;
   const isRoot = (i: number, f: number) => (TUNING[i] + f) % 12 === chord.root;
   const noteName = (i: number, f: number) => names[(TUNING[i] + f) % 12];
+  /** Bundmarkierungen wie auf dem Griffbrett (3, 5, 7, 9, doppelt bei 12) im sichtbaren Ausschnitt */
+  const inlays = $derived(
+    Array.from({ length: FRETS }, (_, k) => baseFret + k).flatMap((f) =>
+      f % 12 === 0 ? [{ f, x: sx(1.5) }, { f, x: sx(3.5) }] : [3, 5, 7, 9].includes(f % 12) ? [{ f, x: sx(2.5) }] : [],
+    ),
+  );
 </script>
 
 <svg viewBox="0 0 {W} {TOP + FRETS * FRET_H + 26}" aria-hidden="true">
@@ -20,6 +26,7 @@
     <line x1={sx(0)} x2={sx(5)} y1={TOP + k * FRET_H} y2={TOP + k * FRET_H} class="fret" class:nut={k === 0 && baseFret === 1} />
   {/each}
   {#if baseFret > 1}<text x={sx(0) - 9} y={fy(baseFret) + 4} class="base">{baseFret}</text>{/if}
+  {#each inlays as m}<circle cx={m.x} cy={fy(m.f)} r="3.2" class="inlay" />{/each}
   <!-- Saiten -->
   {#each chord.frets as _, i}
     <line x1={sx(i)} x2={sx(i)} y1={TOP} y2={TOP + FRETS * FRET_H} class="string" />
@@ -54,6 +61,7 @@
   .fret { stroke: var(--muted); stroke-width: 1.2; opacity: 0.55; }
   .fret.nut { stroke: var(--text); stroke-width: 4; opacity: 1; }
   .string { stroke: var(--muted); stroke-width: 1.2; }
+  .inlay { fill: var(--muted); opacity: 0.35; }
   .dot { fill: var(--text); }
   .dot.root { fill: var(--accent); }
   .open { fill: none; stroke: var(--text); stroke-width: 1.6; }

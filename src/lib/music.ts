@@ -141,16 +141,23 @@ export function cagedShapes(root: number, scale: ScaleId): Shape[] {
 
 /* ---------------- Akkorde ---------------- */
 
-export type ChordQuality = '' | 'm' | '7' | 'maj7' | 'm7' | 'add9' | 'sus2' | 'sus4';
+export type ChordQuality = '' | 'm' | '7' | 'maj7' | 'm7' | '9' | 'add9' | 'sus2' | 'sus4';
 export type ChordGroup = 'major' | 'minor' | 'seventh' | 'variant';
 
 export const CHORD_INTERVALS: Record<ChordQuality, number[]> = {
   '': [0, 4, 7], m: [0, 3, 7], '7': [0, 4, 7, 10], maj7: [0, 4, 7, 11], m7: [0, 3, 7, 10],
-  add9: [0, 2, 4, 7], sus2: [0, 2, 7], sus4: [0, 5, 7],
+  '9': [0, 4, 7, 10, 2], add9: [0, 4, 7, 2], sus2: [0, 2, 7], sus4: [0, 5, 7],
 };
 
 /** Akkordarten im Akkord-Finder (für jeden Grundton gibt es mindestens einen Griff). */
-export const FINDER_QUALITIES: ChordQuality[] = ['', 'm', '7', 'maj7', 'm7', 'sus2', 'sus4'];
+export const FINDER_QUALITIES: ChordQuality[] = ['', 'm', '7', 'maj7', 'm7', '9', 'sus2', 'sus4'];
+/** Akkordarten, die es nur für manche Grundtöne gibt (nur offene Griffe) – werden nur dort angeboten. */
+export const OPTIONAL_QUALITIES: ChordQuality[] = ['add9'];
+
+/** Akkordarten, für die es beim Grundton mindestens einen Griff gibt, in Anzeige-Reihenfolge. */
+export function qualitiesFor(root: number): ChordQuality[] {
+  return [...FINDER_QUALITIES, ...OPTIONAL_QUALITIES.filter((q) => chordVoicings(root, q).length > 0)];
+}
 
 export interface Chord {
   root: number;
@@ -188,6 +195,10 @@ export const CHORDS: Chord[] = [
 
   { root: 5, quality: 'maj7', group: 'variant', frets: [x, x, 3, 2, 1, 0], fingers: [0, 0, 3, 2, 1, 0] },
   { root: 0, quality: 'add9', group: 'variant', frets: [x, 3, 2, 0, 3, 3], fingers: [0, 2, 1, 0, 3, 4] },
+  { root: 7, quality: 'add9', group: 'variant', frets: [3, 2, 0, 2, 0, 3], fingers: [3, 2, 0, 1, 0, 4] },
+  { root: 2, quality: 'add9', group: 'variant', frets: [x, 5, 4, 2, 3, 0], fingers: [0, 4, 3, 1, 2, 0] },
+  { root: 9, quality: 'add9', group: 'variant', frets: [x, 0, 2, 4, 2, 0], fingers: [0, 0, 1, 4, 2, 0] },
+  { root: 4, quality: 'add9', group: 'variant', frets: [0, 2, 4, 1, 0, 0], fingers: [0, 2, 4, 1, 0, 0] },
   { root: 2, quality: 'sus2', group: 'variant', frets: [x, x, 0, 2, 3, 0], fingers: [0, 0, 0, 1, 2, 0] },
   { root: 2, quality: 'sus4', group: 'variant', frets: [x, x, 0, 2, 3, 3], fingers: [0, 0, 0, 1, 2, 3] },
   { root: 9, quality: 'sus2', group: 'variant', frets: [x, 0, 2, 2, 0, 0], fingers: [0, 0, 1, 2, 0, 0] },
@@ -207,6 +218,7 @@ const MOVABLE: Record<'E' | 'A', Partial<Record<ChordQuality, Template>>> = {
     maj7: { frets: [0, x, 1, 1, 0, x], fingers: [1, 0, 3, 4, 2, 0], barre: false },
     m7: { frets: [0, 2, 0, 0, 0, 0], fingers: [1, 3, 1, 1, 1, 1], barre: true },
     sus4: { frets: [0, 2, 2, 2, 0, 0], fingers: [1, 2, 3, 4, 1, 1], barre: true },
+    '9': { frets: [0, 2, 0, 1, 0, 2], fingers: [1, 3, 1, 2, 1, 4], barre: true },
   },
   A: {
     '': { frets: [x, 0, 2, 2, 2, 0], fingers: [0, 1, 2, 3, 4, 1], barre: true },
@@ -216,6 +228,8 @@ const MOVABLE: Record<'E' | 'A', Partial<Record<ChordQuality, Template>>> = {
     m7: { frets: [x, 0, 2, 0, 1, 0], fingers: [0, 1, 3, 1, 2, 1], barre: true },
     sus2: { frets: [x, 0, 2, 2, 0, 0], fingers: [0, 1, 3, 4, 1, 1], barre: true },
     sus4: { frets: [x, 0, 2, 2, 3, 0], fingers: [0, 1, 2, 3, 4, 1], barre: true },
+    // Der klassische Funk-Griff (C9: x32333) – Grundton auf der A-Saite, Ringfinger-Barré auf G, H, e
+    '9': { frets: [x, 0, -1, 0, 0, 0], fingers: [0, 2, 1, 3, 3, 3], barre: false },
   },
 };
 
@@ -236,6 +250,8 @@ export function chordVoicings(root: number, quality: ChordQuality): Voicing[] {
     const open = TUNING[shape === 'E' ? 0 : 1] % 12;
     const r = (root - open + 12) % 12;
     const frets = tpl.frets.map((f) => (f === null ? null : f + r));
+    // Griff reicht bis unter den Sattel oder bis auf eine leere Saite (A9/B♭9 als A-Form) → weglassen
+    if (frets.some((f, i) => f !== null && (f < 0 || (f === 0 && tpl.frets[i] !== 0)))) return;
     // Offene Variante: Finger rücken um eins nach unten, leere Saiten brauchen keinen Finger
     const fingers = tpl.fingers.map((fg, i) => (frets[i] === null ? 0 : r === 0 ? (frets[i] === 0 ? 0 : fg - 1) : fg));
     const zeroStrings = tpl.frets.flatMap((f, i) => (f === 0 ? [i] : []));

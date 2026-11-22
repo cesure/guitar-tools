@@ -8,6 +8,8 @@ Skalen, Akkord-Finder. Live: https://cesure.github.io/guitar-tools/
 - **Nichts live stellen ohne Freigabe.** „Live stellen“ heißt: Push auf `main` → GitHub Action baut und
   deployt auf GitHub Pages (Pages-Quelle: „GitHub Actions“). Vorher nur lokal ändern, bauen, testen.
 - Die Schrift **Staatliches** nicht verwenden (der User mag sie nicht).
+- Der User spielt seit vielen Jahren (Lagerfeuer), lernt aber erst jetzt Soli, Sweep Picking usw.
+  → nicht nur für absolute Anfänger denken; Fortgeschrittenes (Arpeggien, Lagen, 9er-Akkorde) ist willkommen.
 
 ## Musik-Konventionen
 - UI ist zweisprachig (Deutsch + Englisch), alle Texte in `src/i18n/ui.ts` – beide Sprachen pflegen.

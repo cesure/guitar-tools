@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   CHORD_INTERVALS, CHORDS, FINDER_QUALITIES, NOTE_NAMES, ROOT_NAMES, SCALES, TUNING,
-  cagedShapes, chordPitchClasses, chordVoicings, spelling, type ScaleId,
+  cagedShapes, qualitiesFor, chordPitchClasses, chordVoicings, spelling, type ScaleId,
 } from '../src/lib/music.ts';
 
 const ALL_ROOTS = [...Array(12).keys()];
@@ -12,9 +12,10 @@ const ALL_ROOTS = [...Array(12).keys()];
 test('jeder Griff klingt genau mit den Tönen seines Akkords, Grundton im Bass', () => {
   let count = 0;
   for (const root of ALL_ROOTS) {
-    for (const q of FINDER_QUALITIES) {
+    for (const q of FINDER_QUALITIES) assert.ok(chordVoicings(root, q).length > 0, `kein Griff für ${NOTE_NAMES.en[root]}${q}`);
+    for (const q of qualitiesFor(root)) {
       const voicings = chordVoicings(root, q);
-      assert.ok(voicings.length > 0, `kein Griff für ${NOTE_NAMES.en[root]}${q}`);
+      assert.ok(voicings.length > 0, `angeboten, aber kein Griff: ${NOTE_NAMES.en[root]}${q}`);
       for (const v of voicings) {
         count++;
         const name = `${NOTE_NAMES.en[root]}${q} [${v.frets.join(' ')}]`;
@@ -33,7 +34,7 @@ test('jeder Griff klingt genau mit den Tönen seines Akkords, Grundton im Bass',
 });
 
 test('Griffe sind spielbar: Finger passen zu den Bünden, Spannweite höchstens 4 Bünde', () => {
-  const all = [...CHORDS, ...ALL_ROOTS.flatMap((r) => FINDER_QUALITIES.flatMap((q) => chordVoicings(r, q)))];
+  const all = [...CHORDS, ...ALL_ROOTS.flatMap((r) => qualitiesFor(r).flatMap((q) => chordVoicings(r, q)))];
   for (const c of all) {
     const name = `${NOTE_NAMES.en[c.root]}${c.quality} [${c.frets.join(' ')}]`;
     assert.equal(c.frets.length, 6, name);
@@ -55,7 +56,7 @@ test('Griffe sind spielbar: Finger passen zu den Bünden, Spannweite höchstens 
 
 test('Griffliste ohne Doppelte, offene Griffe zuerst', () => {
   for (const root of ALL_ROOTS) {
-    for (const q of FINDER_QUALITIES) {
+    for (const q of qualitiesFor(root)) {
       const v = chordVoicings(root, q);
       const keys = v.map((c) => c.frets.join(','));
       assert.equal(new Set(keys).size, keys.length, `${root}${q}: doppelter Griff`);
@@ -73,6 +74,15 @@ test('Lagerfeuer-Grundgriffe sind dabei', () => {
   assert.ok(has(2, '', [null, null, 0, 2, 3, 2]), 'D');
   assert.ok(has(9, 'm', [null, 0, 2, 2, 1, 0]), 'Am');
   assert.ok(has(4, 'm', [0, 2, 2, 0, 0, 0]), 'Em');
+});
+
+test('9er-Akkorde für alle Grundtöne, add9 nur wo es offene Griffe gibt', () => {
+  const nine = (root: number, frets: (number | null)[]) => chordVoicings(root, '9').some((v) => v.frets.join() === frets.join());
+  assert.ok(nine(0, [null, 3, 2, 3, 3, 3]), 'C9 (Funk-Griff)');
+  assert.ok(nine(4, [0, 2, 0, 1, 0, 2]), 'E9 offen');
+  assert.ok(!chordVoicings(9, '9').some((v) => v.frets.some((f) => f !== null && f < 0)), 'kein Bund unter 0');
+  const withAdd9 = ALL_ROOTS.filter((r) => qualitiesFor(r).includes('add9'));
+  assert.deepEqual(withAdd9, [0, 2, 4, 7, 9]); // C, D, E, G, A
 });
 
 /* ---------------- Tonnamen ---------------- */

@@ -5,7 +5,7 @@
   import { pluck } from '../lib/audio';
   import { load, oneOf, save } from '../lib/storage';
   import {
-    FINDER_QUALITIES, ROOT_NAMES, TUNING, chordPitchClasses, chordVoicings, midiToFreq, spelling,
+    ROOT_NAMES, TUNING, chordPitchClasses, chordVoicings, midiToFreq, qualitiesFor, spelling,
     type Chord, type ChordQuality, type Voicing,
   } from '../lib/music';
   import type { Lang, Messages } from '../i18n/ui';
@@ -23,7 +23,7 @@
     const root = Number(p.get('root'));
     if (p.has('root') && Number.isInteger(root) && root >= 0 && root < 12) find.root = root;
     const q = p.get('q');
-    if (q !== null && (FINDER_QUALITIES as string[]).includes(q)) find.quality = q as ChordQuality;
+    if (q !== null && (qualitiesFor(find.root) as string[]).includes(q)) find.quality = q as ChordQuality;
     ready = true;
   });
   $effect(() => {
@@ -34,12 +34,17 @@
   });
 
   const rootNames = $derived(ROOT_NAMES[lang]);
+  // add9 gibt es nur bei manchen Grundtönen → beim Wechsel auf einen anderen Grundton notfalls auf Dur zurück
+  const qualities = $derived(qualitiesFor(find.root));
+  $effect(() => {
+    if (!qualities.includes(find.quality)) find.quality = '';
+  });
   const voicings = $derived(chordVoicings(find.root, find.quality));
 
   const chordName = (c: Chord) => `${rootNames[c.root]}${c.quality}`;
   /** Tonnamen passend zum Akkord (C7 → B statt A♯). */
   const namesFor = (c: Chord) =>
-    spelling(lang, c.root, c.quality === 'm' || c.quality === 'm7' ? 'minor' : c.quality === '7' ? 'mixolydian' : 'major');
+    spelling(lang, c.root, c.quality === 'm' || c.quality === 'm7' ? 'minor' : c.quality === '7' || c.quality === '9' ? 'mixolydian' : 'major');
   const voicingLabel = (v: Voicing) =>
     v.kind === 'open' ? t.open : `${v.kind === 'E' ? t.shapeE : t.shapeA} · ${v.position}. ${t.fret}`;
 
@@ -60,7 +65,7 @@
   <div class="wide"><div class="label">{t.finder}</div><p class="hint-left">{t.finderSub}</p></div>
   <div class="wide"><Seg cols={6} items={rootNames.map((n, i) => ({ value: i, label: n }))} bind:value={find.root} label={t.finder} /></div>
   <div class="wide">
-    <Seg cols={4} items={FINDER_QUALITIES.map((q) => ({ value: q, label: `${rootNames[find.root]}${q}` }))} bind:value={find.quality} label={t.kind} />
+    <Seg cols={3} items={qualities.map((q) => ({ value: q, label: t.kinds[q] }))} bind:value={find.quality} label={t.kind} />
   </div>
   <div><div class="label">{t.labels}</div><Seg small items={[{ value: 'fingers', label: t.fingers }, { value: 'notes', label: t.notes }]} bind:value={s.labels} label={t.labels} /></div>
 </div>
