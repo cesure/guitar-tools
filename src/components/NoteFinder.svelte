@@ -533,9 +533,9 @@
   .mini .fret { stroke: var(--fb-fret); stroke-width: 1.5; }
   .mini .fret.nut { stroke: var(--fb-nut); stroke-width: 4; }
   .mini .str { stroke: var(--fb-string); stroke-width: 1; }
-  .mini .str.active { stroke: var(--accent); stroke-width: 2.5; }
+  .mini .str.active { stroke: var(--fb-root, var(--accent)); stroke-width: 2.5; }
   .mini .inlay { fill: var(--fb-inlay); opacity: 0.6; }
-  .mini .dot { fill: var(--ok); stroke: var(--panel); stroke-width: 1.5; }
+  .mini .dot { fill: var(--fb-root, var(--ok)); stroke: var(--panel); stroke-width: 1.5; }
 
   .feedback { min-height: 64px; margin: 12px 0; display: grid; place-items: center; }
   .feedback p { margin: 0; }

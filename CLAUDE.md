@@ -40,6 +40,9 @@ Skalen, Akkord-Finder. Live: https://cesure.github.io/guitar-tools/
 - Einstellungen im localStorage (`gt-theme`, `gt-lang`, `gt-metronome`, `gt-finder`, `gt-chords`,
   `gt-tuner`); Skalen-/Akkordwahl steht in der URL (teilbar).
 - Layout: ab 720px Seitenleiste, darunter Tab-Leiste unten. Helles/dunkles Theme über CSS-Variablen.
+- Farben (`src/styles/global.css`): Akzent Waldgrün (hell #2f5e3a, dunkel #7fbf86), Blue Note/typische Töne
+  Violett, Griffbrett dunkles Palisander, dunkles Theme grau (#1c1d1f). Grundton auf dem Griffbrett: `--fb-root`.
+  Logo: `public/favicon.svg`, App-Icons daraus mit `npm run icons`. Neues Logo (G + T als Gitarre) ist in Arbeit.
   Auswahl-Leisten (`Seg`) mit vielen Optionen bekommen `cols={n}` → auf dem Handy Raster statt Wischen.
 
 ## Tonerkennung (Feintuning)

@@ -15,7 +15,7 @@ await sharp(square, { density: 600 }).resize(180, 180).png().toFile('public/icon
 
 // Maskable: Motiv mit Rand, damit Android es beliebig zuschneiden kann
 const inner = await sharp(square, { density: 600 }).resize(400, 400).png().toBuffer();
-await sharp({ create: { width: 512, height: 512, channels: 4, background: '#e3a857' } })
+await sharp({ create: { width: 512, height: 512, channels: 4, background: '#2f5e3a' } })
   .composite([{ input: inner, top: 56, left: 56 }])
   .png()
   .toFile('public/icons/icon-maskable-512.png');

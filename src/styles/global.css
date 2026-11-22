@@ -1,30 +1,32 @@
 /* ---------- Farben: Hell (Standard) ---------- */
 :root {
   --bg: #f4f2ee; --panel: #ffffff; --panel2: #eeebe5; --line: #e1ddd5;
-  --text: #1f1c18; --muted: #6f6962; --accent: #b0701f; --accent-ink: #ffffff;
+  --text: #1f1c18; --muted: #6f6962; --accent: #2f5e3a; --accent-ink: #ffffff;
   --shadow: 0 1px 2px rgba(40, 30, 20, .06), 0 8px 24px rgba(40, 30, 20, .05);
-  --fb-bg: #efe5d3; --fb-fret: #cdbb9b; --fb-string: #8d7f69; --fb-dot: #ffffff; --fb-dot-ink: #2b241c;
-  --fb-label: #8f8574; --fb-inlay: #b7a689; --fb-nut: #3a3128;
-  --char: #2f6db0; --ok: #23864f;
+  /* Griffbrett: dunkles Palisander */
+  --fb-bg: #4a3a30; --fb-fret: #6e5c4f; --fb-string: #c9bba9; --fb-dot: #ffffff; --fb-dot-ink: #2b241c;
+  --fb-label: #8f8574; --fb-inlay: #8f7c6c; --fb-nut: #efe6d8;
+  --fb-root: #7fbf86; --fb-root-ink: #0b1d10; /* Grundton auf dem dunklen Griffbrett */
+  --char: #8a5ee0; --ok: #23864f;
   color-scheme: light;
 }
 /* ---------- Farben: Dunkel ---------- */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg: #121214; --panel: #1a1a1e; --panel2: #232329; --line: #2c2c33;
-    --text: #ece8e1; --muted: #9a958d; --accent: #e3a857; --accent-ink: #1a1208;
+    --bg: #1c1d1f; --panel: #242528; --panel2: #2d2f33; --line: #383a3f;
+    --text: #ece8e1; --muted: #9a958d; --accent: #7fbf86; --accent-ink: #0b1d10;
     --shadow: none;
-    --fb-bg: #19140f; --fb-fret: #3d342a; --fb-string: #9a8f80; --fb-dot: #e9e3d8; --fb-dot-ink: #111;
-    --fb-label: #7a736a; --fb-inlay: #8b7f6c; --fb-nut: #d8d2c4; --char: #5b9be8; --ok: #43c07d;
+    --fb-bg: #1d1714; --fb-fret: #4a3f37; --fb-string: #9a8f80; --fb-dot: #e9e3d8; --fb-dot-ink: #111;
+    --fb-label: #7a736a; --fb-inlay: #8b7f6c; --fb-nut: #d8d2c4; --char: #b99af0; --ok: #43c07d;
     color-scheme: dark;
   }
 }
 :root[data-theme='dark'] {
-  --bg: #121214; --panel: #1a1a1e; --panel2: #232329; --line: #2c2c33;
-  --text: #ece8e1; --muted: #9a958d; --accent: #e3a857; --accent-ink: #1a1208;
+  --bg: #1c1d1f; --panel: #242528; --panel2: #2d2f33; --line: #383a3f;
+  --text: #ece8e1; --muted: #9a958d; --accent: #7fbf86; --accent-ink: #0b1d10;
   --shadow: none;
-  --fb-bg: #19140f; --fb-fret: #3d342a; --fb-string: #9a8f80; --fb-dot: #e9e3d8; --fb-dot-ink: #111;
-  --fb-label: #7a736a; --fb-inlay: #8b7f6c; --fb-nut: #d8d2c4; --char: #5b9be8; --ok: #43c07d;
+  --fb-bg: #1d1714; --fb-fret: #4a3f37; --fb-string: #9a8f80; --fb-dot: #e9e3d8; --fb-dot-ink: #111;
+  --fb-label: #7a736a; --fb-inlay: #8b7f6c; --fb-nut: #d8d2c4; --char: #b99af0; --ok: #43c07d;
   color-scheme: dark;
 }
 

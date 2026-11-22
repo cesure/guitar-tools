@@ -212,15 +212,15 @@
     background: var(--fb-dot); color: var(--fb-dot-ink); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
     font-size: 10.5px; font-weight: 600; display: flex; align-items: center; justify-content: center; transition: opacity 0.2s;
   }
-  .m.root { background: var(--accent); color: var(--accent-ink); box-shadow: none; }
+  .m.root { background: var(--fb-root, var(--accent)); color: var(--fb-root-ink, var(--accent-ink)); box-shadow: none; }
   .m.char { background: var(--char); color: #fff; box-shadow: none; }
   .m.dim { opacity: 0.15; }
   .swipe { display: none; color: var(--muted); font-size: 12px; text-align: center; margin-top: 8px; }
   .legend { display: flex; flex-wrap: wrap; gap: 8px 18px; color: var(--muted); font-size: 13px; margin-top: 14px; }
   .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 6px; background: var(--fb-dot); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15); }
-  .legend i.root { background: var(--accent); }
+  .legend i.root { background: var(--fb-root, var(--accent)); }
   .legend i.char { background: var(--char); }
-  .legend i.dim { opacity: 0.25; }
+  .legend i.dim { background: var(--muted); opacity: 0.35; }
   .info { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
   .info p { margin: 0 0 12px; }
   .shape-title { font-weight: 600; margin: -6px 0 10px; }
