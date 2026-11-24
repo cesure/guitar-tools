@@ -3,6 +3,7 @@
   import Seg from './Seg.svelte';
   import { METERS, METER_IDS, SOUND_IDS } from '../lib/metronome';
   import { BPM_MAX, BPM_MIN, clampBpm, metronome as m } from '../lib/metronome-store.svelte';
+  import { audioState } from '../lib/audio';
   import type { Messages } from '../i18n/ui';
 
   let { t }: { t: Messages['metronome'] } = $props();
@@ -11,6 +12,22 @@
   // Bis die gespeicherten Einstellungen geladen sind, nichts zeigen – sonst blitzt kurz der Standardwert auf
   let hydrated = $state(false);
   onMount(() => (hydrated = true));
+
+  // Fehlersuche: ?debug in der Adresse zeigt den Zustand der Audio-Ausgabe
+  let debug = $state('');
+  onMount(() => {
+    if (!new URLSearchParams(location.search).has('debug')) return;
+    const id = setInterval(() => {
+      const ac = (globalThis as { __gtAudio?: AudioContext }).__gtAudio;
+      debug = [
+        `AudioContext: ${audioState()}`,
+        ac ? `Uhr: ${ac.currentTime.toFixed(2)} s · ${ac.sampleRate} Hz` : 'Uhr: –',
+        `Metronom läuft: ${m.running} · Seite sichtbar: ${document.visibilityState}`,
+        `Browser: ${navigator.userAgent.replace(/^.*?\) /, '')}`,
+      ].join('\n');
+    }, 300);
+    return () => clearInterval(id);
+  });
 
   let tapped = $state(false);
   function tap() {
@@ -63,6 +80,8 @@
       <button class="btn ghost tap" class:flash={tapped} onclick={tap} title={t.tapHint}>{t.tap}</button>
     </div>
     <div class="status">{status}</div>
+    {#if m.muted}<button class="muted" onclick={() => {}}>{t.muted}</button>{/if}
+    {#if debug}<pre class="debug">{debug}</pre>{/if}
   </div>
 
   <div class="card">
@@ -102,6 +121,8 @@
   .btn.tap.flash { background: var(--accent); color: var(--accent-ink); }
   .status { color: var(--muted); font-size: 13px; margin-top: 14px; text-align: center; font-variant-numeric: tabular-nums; }
   .field.off { opacity: 0.45; }
+  .muted { all: unset; display: block; cursor: pointer; margin: 12px auto 0; padding: 8px 12px; border-radius: 10px; font-size: 13px; text-align: center; color: var(--text); background: color-mix(in srgb, var(--char) 18%, transparent); border: 1px solid var(--char); }
+  .debug { margin: 12px 0 0; padding: 8px; font-size: 11px; line-height: 1.4; white-space: pre-wrap; color: var(--muted); background: var(--bg); border-radius: 8px; }
   @media (max-width: 720px) {
     .bpm { font-size: 80px; }
     .row .btn { flex: 1; }

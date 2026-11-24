@@ -1,10 +1,45 @@
-/** Ein gemeinsamer AudioContext für die ganze Seite. Muss nach einer Nutzeraktion erzeugt werden. */
+/**
+ * Ein gemeinsamer AudioContext für die ganze Seite. Muss nach einer Nutzeraktion erzeugt werden.
+ *
+ * Safari (vor allem iOS) hält den Kontext an, wenn die Seite in den Hintergrund geht, der Bildschirm
+ * gesperrt wird oder die Seite aus dem Zwischenspeicher zurückkommt. Der Zustand heißt dann „suspended“
+ * oder – nur Safari – „interrupted“. Die Audio-Uhr steht, es kommt kein Ton. Wieder starten darf die Seite
+ * ihn oft nur nach einer Nutzeraktion → jedes Tippen auf der Seite versucht es (siehe unten).
+ */
 let ctx: AudioContext | null = null;
+let resuming = false;
+const listeners = new Set<(state: string) => void>();
+
+function wake() {
+  if (!ctx || ctx.state === 'running' || ctx.state === 'closed' || resuming) return;
+  resuming = true;
+  ctx.resume().catch(() => {}).finally(() => (resuming = false));
+}
 
 export function audio(): AudioContext {
-  ctx ??= new AudioContext();
-  if (ctx.state === 'suspended') void ctx.resume();
+  if (!ctx || ctx.state === 'closed') {
+    ctx = new AudioContext();
+    (globalThis as { __gtAudio?: AudioContext }).__gtAudio = ctx; // für die Debug-Anzeige (?debug)
+    ctx.onstatechange = () => listeners.forEach((fn) => fn(ctx?.state ?? 'none'));
+  }
+  wake();
   return ctx;
+}
+
+/** Aktueller Zustand: none | running | suspended | interrupted (Safari) | closed */
+export const audioState = (): string => ctx?.state ?? 'none';
+
+/** Bei Zustandswechsel benachrichtigen. Gibt eine Abmelde-Funktion zurück. */
+export function onAudioState(fn: (state: string) => void) {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
+if (typeof window !== 'undefined') {
+  // Nutzeraktion → angehaltenen Kontext wieder starten (Safari erlaubt das nur hier zuverlässig)
+  for (const ev of ['pointerdown', 'touchend', 'keydown']) window.addEventListener(ev, wake, { capture: true, passive: true });
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && wake());
+  window.addEventListener('pageshow', wake);
 }
 
 /** Gezupfter Ton aus Grundton + Obertönen mit Abklingkurve. */

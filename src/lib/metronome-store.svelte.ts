@@ -1,4 +1,5 @@
 import { METER_IDS, Metronome, SOUND_IDS, type MeterId, type SoundId } from './metronome';
+import { audioState, onAudioState } from './audio';
 import { clampInt, load, oneOf, save } from './storage';
 
 /**
@@ -40,6 +41,11 @@ class MetronomeStore {
   running = $state(false);
   beat = $state(-1);
   bar = $state(0);
+  /** Zustand des AudioContext – läuft das Metronom, aber der Ton ist angehalten (Safari), zeigt die UI einen Hinweis */
+  audio = $state('none');
+  get muted() {
+    return this.running && this.audio !== 'running';
+  }
 
   private wakeLock: WakeLockSentinel | null = null;
   private taps: number[] = [];
@@ -69,6 +75,7 @@ class MetronomeStore {
         this.engine.sound = oneOf(this.s.sound, SOUND_IDS, 'click');
       });
     });
+    onAudioState((st) => (this.audio = st));
     // Das System gibt die Bildschirmsperre frei, sobald die App in den Hintergrund geht → beim Zurückkommen neu holen
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && this.running) void this.keepScreenOn();
@@ -79,6 +86,7 @@ class MetronomeStore {
     if (this.running) return;
     this.bar = 0;
     this.engine.start();
+    this.audio = audioState();
     this.running = true;
     void this.keepScreenOn();
   }

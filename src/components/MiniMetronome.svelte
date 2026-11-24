@@ -10,7 +10,7 @@
 {#if m.running}
   <div class="mini" role="group" aria-label={t.title}>
     <a class="info" {href} title={t.open}>
-      <i class:on={m.beat === 0} class:beat={m.beat > 0}></i>
+      <i class:on={m.beat === 0} class:beat={m.beat > 0} class:muted={m.muted} title={m.muted ? t.muted : undefined}></i>
       <strong>{s.bpm}</strong> <span>{t.bpm}</span>
     </a>
     <button class="r" onclick={() => (s.bpm = clampBpm(s.bpm - 1))} aria-label={t.slower}>−</button>
@@ -32,6 +32,8 @@
   i { width: 10px; height: 10px; border-radius: 50%; background: var(--panel2); border: 1px solid var(--line); }
   i.on { background: var(--accent); border-color: var(--accent); }
   i.beat { background: var(--text); }
+  i.muted { background: var(--char); border-color: var(--char); animation: blink 1s infinite; }
+  @keyframes blink { 50% { opacity: .3; } }
   .r { all: unset; cursor: pointer; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line); background: var(--bg); font-size: 16px; }
   .r.stop { font-size: 12px; }
   .r:focus-visible { outline: 2px solid var(--accent); }
