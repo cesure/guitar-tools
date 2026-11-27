@@ -68,6 +68,55 @@ export function restartAudio() {
   listeners.forEach((fn) => fn(ctx?.state ?? 'none'));
 }
 
+/*
+ * Ausgabe-Weg. Standard: direkt auf ctx.destination. Alternative (Test, ?debug): über ein <audio>-Element.
+ * Hintergrund: Safari auf dem Mac bindet Web Audio eines Tabs an das Ausgabegerät beim Öffnen des Tabs;
+ * wechselt die Standard-Ausgabe (Interface, Kopfhörer), bleibt der Tab stumm. Media-Elemente folgen dem Wechsel.
+ */
+let viaElement = (() => {
+  try {
+    return localStorage.getItem('gt-audio-out') === 'element';
+  } catch {
+    return false;
+  }
+})();
+let outNode: AudioNode | null = null;
+let outCtx: AudioContext | null = null;
+let el: HTMLAudioElement | null = null;
+
+/** Knoten, an den alle Klänge angeschlossen werden. */
+export function output(): AudioNode {
+  const c = audio();
+  if (!viaElement) return c.destination;
+  if (outCtx !== c || !outNode) {
+    const dest = c.createMediaStreamDestination();
+    const g = c.createGain();
+    g.connect(dest);
+    el ??= new Audio();
+    el.srcObject = dest.stream;
+    void el.play().then(() => logAudio('Ausgabe über Audio-Element')).catch((e: Error) => logAudio(`Audio-Element: ${e?.name} ${e?.message}`));
+    outNode = g;
+    outCtx = c;
+  }
+  return outNode;
+}
+export const elementOutput = () => viaElement;
+export function setElementOutput(on: boolean) {
+  viaElement = on;
+  outNode = null;
+  if (!on && el) {
+    el.pause();
+    el.srcObject = null;
+  }
+  try {
+    localStorage.setItem('gt-audio-out', on ? 'element' : 'direct');
+  } catch {
+    /* ohne Speichern */
+  }
+  logAudio(`Ausgabe-Weg: ${on ? 'Audio-Element' : 'direkt'}`);
+  if (on) output();
+}
+
 /** iOS: Ton auch bei Lautlos-Schalter abspielen (wie Musik-Apps). Ab Safari 16.4. */
 export function setPlaybackSession(on: boolean) {
   const s = (navigator as { audioSession?: { type: string } }).audioSession;
@@ -108,7 +157,7 @@ export function pluck(freq: number, duration = 2.5, volume = 0.5, delay = 0) {
   const ac = audio();
   const now = ac.currentTime + delay;
   const master = ac.createGain();
-  master.connect(ac.destination);
+  master.connect(output());
   master.gain.setValueAtTime(0, now);
   master.gain.linearRampToValueAtTime(volume, now + 0.008);
   master.gain.exponentialRampToValueAtTime(0.0001, now + duration);

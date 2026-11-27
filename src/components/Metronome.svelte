@@ -3,7 +3,7 @@
   import Seg from './Seg.svelte';
   import { METERS, METER_IDS, SOUND_IDS } from '../lib/metronome';
   import { BPM_MAX, BPM_MIN, clampBpm, metronome as m } from '../lib/metronome-store.svelte';
-  import { audioLog, audioState, playbackSession, pluck, restartAudio, setPlaybackSession } from '../lib/audio';
+  import { audioLog, audioState, elementOutput, playbackSession, pluck, restartAudio, setElementOutput, setPlaybackSession } from '../lib/audio';
   import type { Messages } from '../i18n/ui';
 
   let { t }: { t: Messages['metronome'] } = $props();
@@ -17,9 +17,11 @@
   let debugOn = $state(false);
   let debug = $state('');
   let copied = $state(false);
+  let viaEl = $state(false);
   onMount(() => {
     if (!new URLSearchParams(location.search).has('debug')) return;
     debugOn = true;
+    viaEl = elementOutput();
     let lastT = 0, lastN = 0;
     const id = setInterval(() => {
       const ac = (globalThis as { __gtAudio?: AudioContext }).__gtAudio;
@@ -30,7 +32,7 @@
         `Version: ${__BUILD__}`,
         `AudioContext: ${audioState()} · Uhr ${t.toFixed(2)} s (${moving}) · ${ac?.sampleRate ?? '–'} Hz`,
         `Metronom läuft: ${m.running} · Klicks geplant: ${n}${m.running ? (n > lastN ? ' (+)' : ' (keine neuen!)') : ''}`,
-        `Seite: ${document.visibilityState} · audioSession: ${playbackSession()}`,
+        `Seite: ${document.visibilityState} · audioSession: ${playbackSession()} · Ausgabe: ${elementOutput() ? 'Audio-Element' : 'direkt'}`,
         `Browser: ${navigator.userAgent.replace(/^.*?\) /, '')}`,
         '',
         ...audioLog.slice(-25),
@@ -107,6 +109,7 @@
         <button class="btn ghost small" onclick={() => pluck(440, 0.6, 0.5)}>Testton</button>
         <button class="btn ghost small" onclick={restartAudio}>Audio neu starten</button>
         <button class="btn ghost small" onclick={() => setPlaybackSession(playbackSession() !== 'playback')}>Lautlos-Schalter ignorieren</button>
+        <button class="btn ghost small" onclick={() => { setElementOutput(!elementOutput()); viaEl = elementOutput(); }}>Ausgabe über Audio-Element: {viaEl ? 'an' : 'aus'}</button>
         <button class="btn ghost small" onclick={copyLog}>{copied ? 'Kopiert ✓' : 'Protokoll kopieren'}</button>
       </div>
       <pre class="debug">{debug}</pre>

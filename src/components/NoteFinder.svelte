@@ -3,7 +3,7 @@
   import { scale } from 'svelte/transition';
   import Seg from './Seg.svelte';
   import MicPanel from './MicPanel.svelte';
-  import { audio, pluck } from '../lib/audio';
+  import { audio, output, pluck } from '../lib/audio';
   import { load, oneOf, save } from '../lib/storage';
   import { PitchListener, type Pitch } from '../lib/pitch';
   import { NATURALS, NOTE_NAMES, STRING_LABELS, TUNING, midiToFreq } from '../lib/music';
@@ -229,7 +229,7 @@
       g.gain.setValueAtTime(0.0001, t0);
       g.gain.exponentialRampToValueAtTime(0.18, t0 + 0.01);
       g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.25);
-      o.connect(g).connect(ac.destination);
+      o.connect(g).connect(output());
       o.start(t0);
       o.stop(t0 + 0.3);
     });

@@ -1,4 +1,4 @@
-import { audio } from './audio';
+import { audio, output } from './audio';
 
 /**
  * Metronom mit Vorausplanung auf der Audio-Uhr ("lookahead scheduling").
@@ -124,7 +124,7 @@ export class Metronome {
       gain.gain.setValueAtTime([0.12, 0.3, 0.38, 0.45][level], time);
       gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
     }
-    osc.connect(gain).connect(ac.destination);
+    osc.connect(gain).connect(output());
     osc.start(time);
     osc.stop(time + 0.06);
   }
@@ -140,7 +140,7 @@ export class Metronome {
       osc.frequency.exponentialRampToValueAtTime(45, time + 0.12);
       g.gain.setValueAtTime(0.9, time);
       g.gain.exponentialRampToValueAtTime(0.001, time + 0.25);
-      osc.connect(g).connect(ac.destination);
+      osc.connect(g).connect(output());
       osc.start(time);
       osc.stop(time + 0.26);
     } else if (hit === 's') {
@@ -151,7 +151,7 @@ export class Metronome {
       osc.frequency.setValueAtTime(190, time);
       g.gain.setValueAtTime(0.25, time);
       g.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
-      osc.connect(g).connect(ac.destination);
+      osc.connect(g).connect(output());
       osc.start(time);
       osc.stop(time + 0.1);
     }
@@ -172,7 +172,7 @@ export class Metronome {
     const g = ac.createGain();
     g.gain.setValueAtTime(volume, time);
     g.gain.exponentialRampToValueAtTime(0.001, time + length);
-    src.connect(filter).connect(g).connect(ac.destination);
+    src.connect(filter).connect(g).connect(output());
     src.start(time);
     src.stop(time + length + 0.01);
   }
