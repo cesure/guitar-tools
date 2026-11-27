@@ -47,9 +47,40 @@ export class Metronome {
   private noise: AudioBuffer | null = null;
   /** Anzahl geplanter Klicks (für ?debug) */
   scheduled = 0;
+  /** Lautstärke 0 … 1,5 (1 = Standard) */
+  private _volume = 1;
+  private busCtx: AudioContext | null = null;
+  private busGain: GainNode | null = null;
   private ctx: AudioContext | null = null;
 
   constructor(private cb: MetronomeCallbacks = {}) {}
+
+  get volume() {
+    return this._volume;
+  }
+  set volume(v: number) {
+    this._volume = Number.isFinite(v) ? Math.max(0, Math.min(1.5, v)) : 1;
+    if (this.busGain && this.busCtx) this.busGain.gain.setTargetAtTime(this._volume, this.busCtx.currentTime, 0.02);
+  }
+
+  /** Gemeinsamer Ausgang aller Metronom-Klänge: Lautstärke → Begrenzer (gegen Übersteuern über 100 %) → Ausgabe */
+  private bus(): AudioNode {
+    const ac = audio();
+    if (this.busCtx !== ac || !this.busGain) {
+      const g = ac.createGain();
+      g.gain.value = this._volume;
+      const limit = ac.createDynamicsCompressor();
+      limit.threshold.value = -2;
+      limit.knee.value = 0;
+      limit.ratio.value = 20;
+      limit.attack.value = 0.001;
+      limit.release.value = 0.05;
+      g.connect(limit).connect(output());
+      this.busCtx = ac;
+      this.busGain = g;
+    }
+    return this.busGain;
+  }
 
   get running() {
     return this.timer !== null;
@@ -124,7 +155,7 @@ export class Metronome {
       gain.gain.setValueAtTime([0.12, 0.3, 0.38, 0.45][level], time);
       gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
     }
-    osc.connect(gain).connect(output());
+    osc.connect(gain).connect(this.bus());
     osc.start(time);
     osc.stop(time + 0.06);
   }
@@ -140,7 +171,7 @@ export class Metronome {
       osc.frequency.exponentialRampToValueAtTime(45, time + 0.12);
       g.gain.setValueAtTime(0.9, time);
       g.gain.exponentialRampToValueAtTime(0.001, time + 0.25);
-      osc.connect(g).connect(output());
+      osc.connect(g).connect(this.bus());
       osc.start(time);
       osc.stop(time + 0.26);
     } else if (hit === 's') {
@@ -151,7 +182,7 @@ export class Metronome {
       osc.frequency.setValueAtTime(190, time);
       g.gain.setValueAtTime(0.25, time);
       g.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
-      osc.connect(g).connect(output());
+      osc.connect(g).connect(this.bus());
       osc.start(time);
       osc.stop(time + 0.1);
     }
@@ -172,7 +203,7 @@ export class Metronome {
     const g = ac.createGain();
     g.gain.setValueAtTime(volume, time);
     g.gain.exponentialRampToValueAtTime(0.001, time + length);
-    src.connect(filter).connect(g).connect(output());
+    src.connect(filter).connect(g).connect(this.bus());
     src.start(time);
     src.stop(time + length + 0.01);
   }

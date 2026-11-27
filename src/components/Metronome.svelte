@@ -52,6 +52,27 @@
     }
   }
 
+  // Tempo direkt als Zahl eingeben: große Zahl antippen, tippen, Enter (oder wegklicken) übernimmt
+  let editing = $state(false);
+  let draft = $state('');
+  function commitBpm() {
+    const n = parseInt(draft, 10);
+    if (Number.isFinite(n)) s.bpm = clampBpm(n);
+    editing = false;
+  }
+  function bpmKey(e: KeyboardEvent) {
+    const el = e.currentTarget as HTMLInputElement;
+    if (e.key === 'Enter') el.blur();
+    else if (e.key === 'Escape') {
+      draft = String(s.bpm);
+      el.blur();
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      s.bpm = clampBpm((parseInt(draft, 10) || s.bpm) + (e.key === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? 10 : 1));
+      draft = String(s.bpm);
+    }
+  }
+
   let tapped = $state(false);
   function tap() {
     m.tap();
@@ -87,7 +108,25 @@
     <div class="bpm-wrap">
       <button class="round" onclick={() => (s.bpm = clampBpm(s.bpm - 1))} aria-label={t.slower}>−</button>
       <div>
-        <div class="bpm" aria-live="polite">{s.bpm}</div>
+        <input
+          class="bpm"
+          type="text"
+          inputmode="numeric"
+          enterkeyhint="done"
+          autocomplete="off"
+          maxlength="3"
+          aria-label={t.bpmInput}
+          title={t.bpmInput}
+          value={editing ? draft : String(s.bpm)}
+          onfocus={(e) => {
+            editing = true;
+            draft = String(s.bpm);
+            (e.currentTarget as HTMLInputElement).select();
+          }}
+          oninput={(e) => (draft = (e.currentTarget as HTMLInputElement).value.replace(/\D/g, '').slice(0, 3))}
+          onblur={commitBpm}
+          onkeydown={bpmKey}
+        />
         <div class="hint">{t.bpm}</div>
       </div>
       <button class="round" onclick={() => (s.bpm = clampBpm(s.bpm + 1))} aria-label={t.faster}>+</button>
@@ -123,6 +162,11 @@
     <Seg items={subs} bind:value={s.subdivision} label={t.subdivision} />
     <div class="label" style="margin-top:18px">{t.sound}</div>
     <Seg items={sounds} bind:value={s.sound} label={t.sound} />
+    <div class="label" style="margin-top:18px">{t.volume}</div>
+    <div class="vol">
+      <input type="range" min="0" max="150" step="5" bind:value={s.volume} aria-label={t.volume} />
+      <span>{s.volume} %</span>
+    </div>
     <div class="field" class:off={s.sound === 'drums'} style="margin-top:8px">
       <label for="m-accent">{t.accent}</label><input id="m-accent" type="checkbox" bind:checked={s.accent} />
     </div>
@@ -138,7 +182,9 @@
 <style>
   .wait { visibility: hidden; }
   .bpm-wrap { display: flex; align-items: center; justify-content: center; gap: 24px; }
-  .bpm { font-size: 96px; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 3ch; text-align: center; line-height: 1; }
+  .bpm { all: unset; box-sizing: content-box; width: 3ch; font-size: 96px; font-weight: 600; font-variant-numeric: tabular-nums; text-align: center; line-height: 1; color: var(--text); border-radius: 12px; cursor: text; }
+  .bpm:hover { background: var(--panel2); }
+  .bpm:focus { background: var(--panel2); outline: 2px solid var(--accent); outline-offset: 2px; }
   .round { all: unset; cursor: pointer; width: 48px; height: 48px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; font-size: 22px; background: var(--panel); }
   .round:focus-visible { outline: 2px solid var(--accent); }
   .dots { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 22px 0; }
@@ -153,6 +199,8 @@
   .btn.tap.flash { background: var(--accent); color: var(--accent-ink); }
   .status { color: var(--muted); font-size: 13px; margin-top: 14px; text-align: center; font-variant-numeric: tabular-nums; }
   .field.off { opacity: 0.45; }
+  .vol { display: flex; align-items: center; gap: 12px; }
+  .vol span { min-width: 4.5ch; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 14px; }
   .muted { all: unset; display: block; cursor: pointer; margin: 12px auto 0; padding: 8px 12px; border-radius: 10px; font-size: 13px; text-align: center; color: var(--text); background: color-mix(in srgb, var(--char) 18%, transparent); border: 1px solid var(--char); }
   .dbg-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
   .dbg-row .btn { padding: 6px 10px; font-size: 12px; }

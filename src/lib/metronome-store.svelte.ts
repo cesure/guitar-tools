@@ -16,6 +16,7 @@ const DEFAULTS = {
   subdivision: 1,
   accent: true,
   sound: 'click' as SoundId,
+  volume: 100,
   ramp: false,
   rampStep: 5,
   rampEvery: 4,
@@ -29,6 +30,7 @@ function loadSettings() {
     subdivision: oneOf(v.subdivision, [1, 2, 3, 4], 1),
     accent: v.accent,
     sound: oneOf(v.sound, SOUND_IDS, 'click'),
+    volume: clampInt(v.volume, 0, 150, 100),
     ramp: v.ramp,
     rampStep: clampInt(v.rampStep, 1, 50, 5),
     rampEvery: clampInt(v.rampEvery, 1, 64, 4),
@@ -77,6 +79,7 @@ class MetronomeStore {
         this.engine.subdivision = oneOf(this.s.subdivision, [1, 2, 3, 4], 1);
         this.engine.accent = this.s.accent !== false;
         this.engine.sound = oneOf(this.s.sound, SOUND_IDS, 'click');
+        this.engine.volume = clampInt(this.s.volume, 0, 150, 100) / 100;
       });
     });
     onAudioState((st) => (this.audio = st));
