@@ -1,5 +1,6 @@
 import { freqToPitch, yin, type Pitch } from './yin';
 import { clampInt, load } from './storage';
+import { logAudio } from './audio';
 
 export type { Pitch };
 
@@ -100,16 +101,22 @@ export class PitchListener {
       const settings = track.getSettings();
       this.deviceLabel = track.label;
       this.channels = Math.max(1, settings.channelCount ?? 2);
-      // AudioContext mit der Abtastrate des Geräts (44,1 / 48 / 96 kHz …)
+      // Zuerst ein normaler AudioContext. Eine eigene Abtastrate nur, wenn der Browser es verlangt (Firefox
+      // verbindet sonst nicht): Safari auf dem Mac kann mit Kontexten unterschiedlicher Abtastrate im selben
+      // Tab die gesamte Audio-Ausgabe des Tabs stummschalten – bis der Tab geschlossen wird.
+      this.ctx = new AudioContext();
+      let source: MediaStreamAudioSourceNode;
       try {
-        this.ctx = new AudioContext(settings.sampleRate ? { sampleRate: settings.sampleRate } : undefined);
+        source = this.ctx.createMediaStreamSource(this.stream);
       } catch {
-        this.ctx = new AudioContext();
+        void this.ctx.close().catch(() => {});
+        this.ctx = new AudioContext(settings.sampleRate ? { sampleRate: settings.sampleRate } : undefined);
+        source = this.ctx.createMediaStreamSource(this.stream);
       }
+      logAudio(`Mikrofon: AudioContext ${this.ctx.sampleRate} Hz (Gerät ${settings.sampleRate ?? '?'} Hz)`);
       await this.ctx.resume();
       this.sampleRate = this.ctx.sampleRate;
 
-      const source = this.ctx.createMediaStreamSource(this.stream);
       const splitter = this.ctx.createChannelSplitter(this.channels);
       source.connect(splitter);
       this.analysers = Array.from({ length: this.channels }, (_, i) => {
