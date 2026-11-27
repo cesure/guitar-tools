@@ -73,12 +73,20 @@ export function restartAudio() {
  * Hintergrund: Safari auf dem Mac bindet Web Audio eines Tabs an das Ausgabegerät beim Öffnen des Tabs;
  * wechselt die Standard-Ausgabe (Interface, Kopfhörer), bleibt der Tab stumm. Media-Elemente folgen dem Wechsel.
  */
+/** Safari (Mac, iPhone, iPad) – nicht Chrome/Firefox/Edge, die unter iOS auch „Safari“ im Namen tragen */
+const isSafari = () =>
+  typeof navigator !== 'undefined' && /safari/i.test(navigator.userAgent) && !/chrome|chromium|crios|fxios|edg|android/i.test(navigator.userAgent);
+
+// Standard: in Safari über das Audio-Element (bestätigt: sonst nach Gerätewechsel stumm), sonst direkt.
+// In ?debug umschaltbar; die Wahl wird gespeichert und hat Vorrang.
 let viaElement = (() => {
   try {
-    return localStorage.getItem('gt-audio-out') === 'element';
+    const saved = localStorage.getItem('gt-audio-out');
+    if (saved === 'element' || saved === 'direct') return saved === 'element';
   } catch {
-    return false;
+    /* ohne Speicher */
   }
+  return isSafari();
 })();
 let outNode: AudioNode | null = null;
 let outCtx: AudioContext | null = null;

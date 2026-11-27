@@ -45,6 +45,13 @@ Skalen, Akkord-Finder. Live: https://cesure.github.io/guitar-tools/
   Logo: `public/favicon.svg`, App-Icons daraus mit `npm run icons`. Neues Logo (G + T als Gitarre) ist in Arbeit.
   Auswahl-Leisten (`Seg`) mit vielen Optionen bekommen `cols={n}` → auf dem Handy Raster statt Wischen.
 
+## Audio-Ausgabe (Safari)
+- Alle Klänge über `output()` aus `src/lib/audio.ts` anschließen, nie direkt an `ctx.destination`.
+- Safari (Mac) bindet Web Audio eines Tabs an das Ausgabegerät beim Öffnen des Tabs; nach einem Gerätewechsel
+  (Interface, Kopfhörer, Ruhezustand) bleibt der Tab stumm – auch nach Neuladen, Kontext meldet trotzdem „running“.
+  Deshalb läuft der Ton in Safari standardmäßig über ein `<audio>`-Element (MediaStreamDestination).
+- Fehlersuche: `?debug` an die Adresse → Protokoll, Testton, Audio-Neustart, Ausgabe-Weg umschalten.
+
 ## Tonerkennung (Feintuning)
 Getestet mit Line 6 Pod Go und Focusrite-Interface. Schwellen bei Bedarf hier anpassen:
 - `NoteFinder.svelte`: Treffer nach 3 stabilen Messungen; Fehler nur bei clarity ≥ 0.9, 8 Messungen
