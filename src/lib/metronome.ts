@@ -45,6 +45,9 @@ export class Metronome {
   private nextTime = 0;
   private timer: ReturnType<typeof setInterval> | null = null;
   private noise: AudioBuffer | null = null;
+  /** Anzahl geplanter Klicks (für ?debug) */
+  scheduled = 0;
+  private ctx: AudioContext | null = null;
 
   constructor(private cb: MetronomeCallbacks = {}) {}
 
@@ -69,8 +72,12 @@ export class Metronome {
 
   private schedule() {
     const ac = audio();
-    // Nach einer Pause (Tab im Hintergrund, Handy gesperrt) nicht alle verpassten Klicks nachholen
-    if (this.nextTime < ac.currentTime - 0.2) this.nextTime = ac.currentTime + 0.05;
+    // Neue Audio-Ausgabe (eigene Uhr ab 0) oder Pause (Hintergrund, Sperre): Takt sofort neu ansetzen,
+    // statt verpasste Klicks nachzuholen oder auf einen Zeitpunkt der alten Uhr zu warten
+    if (ac !== this.ctx || this.nextTime < ac.currentTime - 0.2) {
+      this.ctx = ac;
+      this.nextTime = ac.currentTime + 0.05;
+    }
     while (this.nextTime < ac.currentTime + LOOKAHEAD_S) {
       const m = METERS[this.meter] ?? METERS['4/4'];
       const sub = Math.max(1, this.subdivision);
@@ -90,6 +97,7 @@ export class Metronome {
         setTimeout(() => this.running && this.cb.onBeat?.(beat), delay);
       }
 
+      this.scheduled++;
       this.nextTime += 60 / Math.max(1, this.bpm) / sub;
       this.tick++;
       if (this.tick % perBar === 0) {

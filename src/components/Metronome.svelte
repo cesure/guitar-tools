@@ -3,7 +3,7 @@
   import Seg from './Seg.svelte';
   import { METERS, METER_IDS, SOUND_IDS } from '../lib/metronome';
   import { BPM_MAX, BPM_MIN, clampBpm, metronome as m } from '../lib/metronome-store.svelte';
-  import { audioState } from '../lib/audio';
+  import { audioLog, audioState, playbackSession, pluck, restartAudio, setPlaybackSession } from '../lib/audio';
   import type { Messages } from '../i18n/ui';
 
   let { t }: { t: Messages['metronome'] } = $props();
@@ -13,21 +13,42 @@
   let hydrated = $state(false);
   onMount(() => (hydrated = true));
 
-  // Fehlersuche: ?debug in der Adresse zeigt den Zustand der Audio-Ausgabe
+  // Fehlersuche: ?debug in der Adresse zeigt Zustand und Protokoll der Audio-Ausgabe
+  let debugOn = $state(false);
   let debug = $state('');
+  let copied = $state(false);
   onMount(() => {
     if (!new URLSearchParams(location.search).has('debug')) return;
+    debugOn = true;
+    let lastT = 0, lastN = 0;
     const id = setInterval(() => {
       const ac = (globalThis as { __gtAudio?: AudioContext }).__gtAudio;
+      const t = ac?.currentTime ?? 0;
+      const moving = ac ? (t > lastT ? 'läuft' : 'STEHT') : '–';
+      const n = m.scheduled;
       debug = [
-        `AudioContext: ${audioState()}`,
-        ac ? `Uhr: ${ac.currentTime.toFixed(2)} s · ${ac.sampleRate} Hz` : 'Uhr: –',
-        `Metronom läuft: ${m.running} · Seite sichtbar: ${document.visibilityState}`,
+        `Version: ${__BUILD__}`,
+        `AudioContext: ${audioState()} · Uhr ${t.toFixed(2)} s (${moving}) · ${ac?.sampleRate ?? '–'} Hz`,
+        `Metronom läuft: ${m.running} · Klicks geplant: ${n}${m.running ? (n > lastN ? ' (+)' : ' (keine neuen!)') : ''}`,
+        `Seite: ${document.visibilityState} · audioSession: ${playbackSession()}`,
         `Browser: ${navigator.userAgent.replace(/^.*?\) /, '')}`,
+        '',
+        ...audioLog.slice(-25),
       ].join('\n');
-    }, 300);
+      lastT = t;
+      lastN = n;
+    }, 500);
     return () => clearInterval(id);
   });
+  async function copyLog() {
+    try {
+      await navigator.clipboard.writeText(debug + '\n\n' + audioLog.join('\n'));
+      copied = true;
+      setTimeout(() => (copied = false), 1500);
+    } catch {
+      /* Zwischenablage nicht verfügbar */
+    }
+  }
 
   let tapped = $state(false);
   function tap() {
@@ -81,7 +102,15 @@
     </div>
     <div class="status">{status}</div>
     {#if m.muted}<button class="muted" onclick={() => {}}>{t.muted}</button>{/if}
-    {#if debug}<pre class="debug">{debug}</pre>{/if}
+    {#if debugOn}
+      <div class="dbg-row">
+        <button class="btn ghost small" onclick={() => pluck(440, 0.6, 0.5)}>Testton</button>
+        <button class="btn ghost small" onclick={restartAudio}>Audio neu starten</button>
+        <button class="btn ghost small" onclick={() => setPlaybackSession(playbackSession() !== 'playback')}>Lautlos-Schalter ignorieren</button>
+        <button class="btn ghost small" onclick={copyLog}>{copied ? 'Kopiert ✓' : 'Protokoll kopieren'}</button>
+      </div>
+      <pre class="debug">{debug}</pre>
+    {/if}
   </div>
 
   <div class="card">
@@ -122,6 +151,8 @@
   .status { color: var(--muted); font-size: 13px; margin-top: 14px; text-align: center; font-variant-numeric: tabular-nums; }
   .field.off { opacity: 0.45; }
   .muted { all: unset; display: block; cursor: pointer; margin: 12px auto 0; padding: 8px 12px; border-radius: 10px; font-size: 13px; text-align: center; color: var(--text); background: color-mix(in srgb, var(--char) 18%, transparent); border: 1px solid var(--char); }
+  .dbg-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .dbg-row .btn { padding: 6px 10px; font-size: 12px; }
   .debug { margin: 12px 0 0; padding: 8px; font-size: 11px; line-height: 1.4; white-space: pre-wrap; color: var(--muted); background: var(--bg); border-radius: 8px; }
   @media (max-width: 720px) {
     .bpm { font-size: 80px; }

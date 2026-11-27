@@ -9,7 +9,11 @@ export default defineConfig({
   base: '/guitar-tools',
   trailingSlash: 'always',
   // Im Container kommen Dateiänderungen vom Mac nicht als Events an → Polling (siehe ./dc)
-  vite: { server: { watch: { usePolling: process.env.GT_POLL === '1', interval: 300 } } },
+  vite: {
+    server: { watch: { usePolling: process.env.GT_POLL === '1', interval: 300 } },
+    // Bau-Zeitpunkt für die Debug-Anzeige (?debug) – zeigt, ob das Handy schon die neue Version hat
+    define: { __BUILD__: JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC') },
+  },
   integrations: [
     svelte(),
     AstroPWAIntegration({

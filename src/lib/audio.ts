@@ -10,21 +10,75 @@ let ctx: AudioContext | null = null;
 let resuming = false;
 const listeners = new Set<(state: string) => void>();
 
-function wake() {
+/* ---------- Protokoll für die Fehlersuche (?debug) ---------- */
+export const audioLog: string[] = [];
+let lastFail = '';
+export function logAudio(msg: string) {
+  const d = new Date();
+  const t = `${d.toLocaleTimeString('de-DE')}.${String(d.getMilliseconds()).padStart(3, '0')}`;
+  audioLog.push(`${t} ${msg}`);
+  if (audioLog.length > 80) audioLog.shift();
+}
+
+function wake(reason = '') {
   if (!ctx || ctx.state === 'running' || ctx.state === 'closed' || resuming) return;
   resuming = true;
-  ctx.resume().catch(() => {}).finally(() => (resuming = false));
+  const before = ctx.state;
+  ctx.resume()
+    .then(() => {
+      lastFail = '';
+      logAudio(`resume (${reason || 'intern'}) aus ${before} → ${ctx?.state}`);
+    })
+    .catch((e: Error) => {
+      const msg = `resume (${reason || 'intern'}) fehlgeschlagen: ${e?.name ?? ''} ${e?.message ?? e}`;
+      if (msg !== lastFail) logAudio(msg); // nicht alle 25 ms dieselbe Meldung
+      lastFail = msg;
+    })
+    .finally(() => (resuming = false));
+}
+
+function create() {
+  const c = new AudioContext();
+  ctx = c;
+  (globalThis as { __gtAudio?: AudioContext }).__gtAudio = c; // für die Debug-Anzeige (?debug)
+  c.onstatechange = () => {
+    if (c !== ctx) return; // alter, gerade geschlossener Kontext
+    logAudio(`Zustand → ${c.state}`);
+    listeners.forEach((fn) => fn(c.state));
+  };
+  logAudio(`AudioContext erstellt (${ctx.state}, ${ctx.sampleRate} Hz)`);
 }
 
 export function audio(): AudioContext {
-  if (!ctx || ctx.state === 'closed') {
-    ctx = new AudioContext();
-    (globalThis as { __gtAudio?: AudioContext }).__gtAudio = ctx; // für die Debug-Anzeige (?debug)
-    ctx.onstatechange = () => listeners.forEach((fn) => fn(ctx?.state ?? 'none'));
-  }
+  if (!ctx || ctx.state === 'closed') create();
   wake();
-  return ctx;
+  return ctx!;
 }
+
+/**
+ * Kontext wegwerfen und neu anlegen. Hilft, wenn iOS nach einer Unterbrechung „running“ meldet,
+ * aber stumm bleibt. Nur nach einer Nutzeraktion aufrufen.
+ */
+export function restartAudio() {
+  const old = ctx;
+  ctx = null;
+  void old?.close().catch(() => {});
+  create();
+  wake('Neustart');
+  listeners.forEach((fn) => fn(ctx?.state ?? 'none'));
+}
+
+/** iOS: Ton auch bei Lautlos-Schalter abspielen (wie Musik-Apps). Ab Safari 16.4. */
+export function setPlaybackSession(on: boolean) {
+  const s = (navigator as { audioSession?: { type: string } }).audioSession;
+  if (!s) return logAudio('audioSession nicht verfügbar (kein iOS/Safari 16.4+)');
+  s.type = on ? 'playback' : 'auto';
+  logAudio(`audioSession.type = ${s.type}`);
+}
+export const playbackSession = () => (navigator as { audioSession?: { type: string } }).audioSession?.type ?? '–';
+
+/** Gibt es schon eine Audio-Ausgabe? */
+export const hasAudio = () => ctx !== null && ctx.state !== 'closed';
 
 /** Aktueller Zustand: none | running | suspended | interrupted (Safari) | closed */
 export const audioState = (): string => ctx?.state ?? 'none';
@@ -37,9 +91,16 @@ export function onAudioState(fn: (state: string) => void) {
 
 if (typeof window !== 'undefined') {
   // Nutzeraktion → angehaltenen Kontext wieder starten (Safari erlaubt das nur hier zuverlässig)
-  for (const ev of ['pointerdown', 'touchend', 'keydown']) window.addEventListener(ev, wake, { capture: true, passive: true });
-  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && wake());
-  window.addEventListener('pageshow', wake);
+  for (const ev of ['pointerdown', 'touchend', 'keydown']) window.addEventListener(ev, () => wake(ev), { capture: true, passive: true });
+  document.addEventListener('visibilitychange', () => {
+    logAudio(`Seite ${document.visibilityState === 'visible' ? 'sichtbar' : 'verborgen'}${ctx ? ` (Audio: ${ctx.state})` : ''}`);
+    if (document.visibilityState === 'visible') wake('sichtbar');
+  });
+  window.addEventListener('pageshow', (e) => {
+    logAudio(`pageshow${e.persisted ? ' (aus Zwischenspeicher)' : ''}`);
+    wake('pageshow');
+  });
+  window.addEventListener('pagehide', (e) => logAudio(`pagehide${e.persisted ? ' (in Zwischenspeicher)' : ''}`));
 }
 
 /** Gezupfter Ton aus Grundton + Obertönen mit Abklingkurve. */

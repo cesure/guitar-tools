@@ -1,5 +1,5 @@
 import { METER_IDS, Metronome, SOUND_IDS, type MeterId, type SoundId } from './metronome';
-import { audioState, onAudioState } from './audio';
+import { audioState, hasAudio, logAudio, onAudioState, restartAudio } from './audio';
 import { clampInt, load, oneOf, save } from './storage';
 
 /**
@@ -43,6 +43,10 @@ class MetronomeStore {
   bar = $state(0);
   /** Zustand des AudioContext – läuft das Metronom, aber der Ton ist angehalten (Safari), zeigt die UI einen Hinweis */
   audio = $state('none');
+  /** Anzahl geplanter Klicks (für ?debug) */
+  get scheduled() {
+    return this.engine.scheduled;
+  }
   get muted() {
     return this.running && this.audio !== 'running';
   }
@@ -76,6 +80,11 @@ class MetronomeStore {
       });
     });
     onAudioState((st) => (this.audio = st));
+    // Audio-Ausgabe gewechselt (Kopfhörer, AirPods, Interface) → neu anlegen, sonst bleibt Safari stumm
+    navigator.mediaDevices?.addEventListener?.('devicechange', () => {
+      logAudio('Audio-Geräte geändert');
+      if (this.running) restartAudio();
+    });
     // Das System gibt die Bildschirmsperre frei, sobald die App in den Hintergrund geht → beim Zurückkommen neu holen
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && this.running) void this.keepScreenOn();
@@ -85,7 +94,11 @@ class MetronomeStore {
   start() {
     if (this.running) return;
     this.bar = 0;
+    // Safari (Mac) meldet nach einem Wechsel der Audio-Ausgabe oder dem Ruhezustand oft „running“, bleibt aber
+    // stumm. Start ist eine Nutzeraktion → hier immer eine frische Audio-Ausgabe anlegen, dann hilft Stopp/Start sicher.
+    if (hasAudio()) restartAudio();
     this.engine.start();
+    logAudio(`Metronom Start (${this.s.bpm} BPM)`);
     this.audio = audioState();
     this.running = true;
     void this.keepScreenOn();
@@ -93,6 +106,7 @@ class MetronomeStore {
 
   stop() {
     this.engine.stop();
+    logAudio('Metronom Stopp');
     this.running = false;
     this.beat = -1;
     void this.wakeLock?.release().catch(() => {});
